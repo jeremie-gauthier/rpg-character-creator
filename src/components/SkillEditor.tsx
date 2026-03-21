@@ -14,6 +14,7 @@ import type {
 } from "@/types/actor";
 import { ChevronDown, Trash2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ImagePlus } from "lucide-react";
 import { IconPreview, SpriteSheetViewer } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
 
@@ -24,6 +25,8 @@ interface SkillEditorProps {
   actorRace: string;
   actorJob: string;
   spriteSheet: string;
+  resolveImage: (path: string) => string;
+  onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
   onChange: (skill: Skill) => void;
   onDelete: () => void;
 }
@@ -33,7 +36,7 @@ function generateSkillId(race: string, job: string, name: string): string {
   return `${slugify(race)}-${slugify(job)}-${slugify(name)}`;
 }
 
-export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, onChange, onDelete }: SkillEditorProps) {
+export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveImage, onUploadImage, onChange, onDelete }: SkillEditorProps) {
   const [open, setOpen] = useState(true);
 
   const update = (partial: Partial<Skill>) => {
@@ -66,7 +69,7 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, onChange,
               <CardTitle className="text-base">{skill.name || "Unnamed Skill"}</CardTitle>
             </CollapsibleTrigger>
             <div className="flex items-center gap-2">
-              <IconPreview src={skill.icon} />
+              <IconPreview src={resolveImage(skill.icon)} />
               <Button variant="ghost" size="icon" onClick={onDelete} className="h-8 w-8 text-destructive">
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -86,7 +89,12 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, onChange,
               </div>
               <div>
                 <Label>Icon Path</Label>
-                <Input value={skill.icon} onChange={(e) => update({ icon: e.target.value })} placeholder="/path/to/icon.png" />
+                <div className="flex gap-1">
+                  <Input value={skill.icon} onChange={(e) => update({ icon: e.target.value })} placeholder="/path/to/icon.png" className="flex-1" />
+                  <Button variant="outline" size="sm" className="h-9 px-2" onClick={() => onUploadImage(skill.icon, (path) => { if (!skill.icon) update({ icon: path }); })}>
+                    <ImagePlus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
 
