@@ -89,7 +89,12 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
               </div>
               <div>
                 <Label>Icon Path</Label>
-                <Input value={skill.icon} onChange={(e) => update({ icon: e.target.value })} placeholder="/path/to/icon.png" />
+                <div className="flex gap-1">
+                  <Input value={skill.icon} onChange={(e) => update({ icon: e.target.value })} placeholder="/path/to/icon.png" className="flex-1" />
+                  <Button variant="outline" size="sm" className="h-9 px-2" onClick={() => onUploadImage(skill.icon, (path) => { if (!skill.icon) update({ icon: path }); })}>
+                    <ImagePlus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
 
