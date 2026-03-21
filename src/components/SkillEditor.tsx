@@ -257,12 +257,6 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           </Button>
         </div>
 
-        {/* Sprite sheet for column picking */}
-        <SpriteSheetViewer
-          src={spriteSheet}
-          label="Click column to set for selected frame"
-          selectedColumns={(damageEffect.animation || []).map((f) => f.columnIdx)}
-        />
 
         {(damageEffect.animation || []).map((frame, fi) => (
           <AnimationFrameRow

@@ -10,8 +10,8 @@ interface SpriteSheetViewerProps {
 export function SpriteSheetViewer({ src, onSelectColumn, selectedColumns = [], label }: SpriteSheetViewerProps) {
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const SPRITE_SIZE = 16;
-  const SCALE = 3;
+  const SPRITE_SIZE = 32;
+  const SCALE = 2;
 
   useEffect(() => {
     if (!src) return;
