@@ -262,7 +262,6 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           <AnimationFrameRow
             key={fi}
             frame={frame}
-            spriteSheet={spriteSheet}
             onChange={(f) => {
               const anim = [...(damageEffect.animation || [])];
               anim[fi] = f;
