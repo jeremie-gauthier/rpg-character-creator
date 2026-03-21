@@ -285,7 +285,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
   );
 }
 
-function AnimationFrameRow({ frame, spriteSheet, onChange, onDelete }: { frame: AnimationDefinition; spriteSheet: string; onChange: (f: AnimationDefinition) => void; onDelete: () => void }) {
+function AnimationFrameRow({ frame, onChange, onDelete }: { frame: AnimationDefinition; onChange: (f: AnimationDefinition) => void; onDelete: () => void }) {
   return (
     <div className="bg-background rounded p-2 space-y-1">
       <div className="flex items-center gap-2">
