@@ -24,6 +24,8 @@ interface SkillEditorProps {
   actorRace: string;
   actorJob: string;
   spriteSheet: string;
+  resolveImage: (path: string) => string;
+  onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
   onChange: (skill: Skill) => void;
   onDelete: () => void;
 }
