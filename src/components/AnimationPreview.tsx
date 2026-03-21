@@ -14,8 +14,8 @@ export function AnimationPreview({ spriteSheetSrc, frames, loop = false }: Anima
   const [playing, setPlaying] = useState(false);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const playingRef = useRef(false);
-  const SPRITE_SIZE = 16;
-  const SCALE = 4;
+  const SPRITE_SIZE = 32;
+  const SCALE = 3;
 
   useEffect(() => {
     if (!spriteSheetSrc) return;

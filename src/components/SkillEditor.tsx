@@ -15,7 +15,7 @@ import type {
 import { ChevronDown, Trash2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ImagePlus } from "lucide-react";
-import { IconPreview, SpriteSheetViewer } from "./SpriteSheetViewer";
+import { IconPreview } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
 
 const AUDIO_IDS = ["footstep", "door", "chest", "chest_close", "ui_click", "sword_attack", "hurt"] as const;
@@ -257,18 +257,11 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           </Button>
         </div>
 
-        {/* Sprite sheet for column picking */}
-        <SpriteSheetViewer
-          src={spriteSheet}
-          label="Click column to set for selected frame"
-          selectedColumns={(damageEffect.animation || []).map((f) => f.columnIdx)}
-        />
 
         {(damageEffect.animation || []).map((frame, fi) => (
           <AnimationFrameRow
             key={fi}
             frame={frame}
-            spriteSheet={spriteSheet}
             onChange={(f) => {
               const anim = [...(damageEffect.animation || [])];
               anim[fi] = f;
@@ -291,7 +284,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
   );
 }
 
-function AnimationFrameRow({ frame, spriteSheet, onChange, onDelete }: { frame: AnimationDefinition; spriteSheet: string; onChange: (f: AnimationDefinition) => void; onDelete: () => void }) {
+function AnimationFrameRow({ frame, onChange, onDelete }: { frame: AnimationDefinition; onChange: (f: AnimationDefinition) => void; onDelete: () => void }) {
   return (
     <div className="bg-background rounded p-2 space-y-1">
       <div className="flex items-center gap-2">
