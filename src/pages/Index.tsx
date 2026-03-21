@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkillEditor } from "@/components/SkillEditor";
+import { SpriteSheetViewer } from "@/components/SpriteSheetViewer";
 import { createDefaultActor, createDefaultSkill, type Actor } from "@/types/actor";
 import { Download, Upload, Plus } from "lucide-react";
 import { toast } from "sonner";
