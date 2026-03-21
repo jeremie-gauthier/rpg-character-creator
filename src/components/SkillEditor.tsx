@@ -14,6 +14,7 @@ import type {
 } from "@/types/actor";
 import { ChevronDown, Trash2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ImagePlus } from "lucide-react";
 import { IconPreview, SpriteSheetViewer } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
 
