@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,14 +6,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkillEditor } from "@/components/SkillEditor";
 import { SpriteSheetViewer } from "@/components/SpriteSheetViewer";
 import { createDefaultActor, createDefaultSkill, type Actor } from "@/types/actor";
-import { Download, Upload, Plus } from "lucide-react";
+import { Download, Upload, Plus, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 
 const Index = () => {
   const [actor, setActor] = useState<Actor>(createDefaultActor());
+  const [imageMap, setImageMap] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
+  const spriteUploadRef = useRef<HTMLInputElement>(null);
 
   const updateActor = (partial: Partial<Actor>) => setActor((a) => ({ ...a, ...partial }));
+
+  const resolveImage = useCallback((path: string) => imageMap[path] || path, [imageMap]);
+
+  const uploadImage = (pathKey: string, onPath?: (path: string) => void) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        const fakePath = pathKey || `/${file.name}`;
+        setImageMap((m) => ({ ...m, [fakePath]: dataUrl }));
+        onPath?.(fakePath);
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
 
   const exportJson = () => {
     if (!actor.race || !actor.job || !actor.spriteSheet) {
@@ -24,7 +47,6 @@ const Index = () => {
       toast.error("Health Points Max must be at least 1.");
       return;
     }
-    // Clean up: remove empty animation arrays
     const clean = {
       ...actor,
       skills: actor.skills.map((s) => ({
@@ -79,7 +101,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <h1 className="text-lg font-bold text-foreground tracking-tight">RPG Actor Builder</h1>
@@ -96,7 +117,6 @@ const Index = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {/* Basic Info */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Actor Info</CardTitle>
@@ -114,7 +134,18 @@ const Index = () => {
             </div>
             <div>
               <Label>Sprite Sheet Path</Label>
-              <Input value={actor.spriteSheet} onChange={(e) => updateActor({ spriteSheet: e.target.value })} placeholder="/actors/heroes/warrior/warrior.png" />
+              <div className="flex gap-2">
+                <Input value={actor.spriteSheet} onChange={(e) => updateActor({ spriteSheet: e.target.value })} placeholder="/actors/heroes/warrior/warrior.png" className="flex-1" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => uploadImage(actor.spriteSheet, (path) => {
+                    if (!actor.spriteSheet) updateActor({ spriteSheet: path });
+                  })}
+                >
+                  <ImagePlus className="h-4 w-4 mr-1" /> Upload
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -126,12 +157,10 @@ const Index = () => {
                 <Input type="number" min={0} value={actor.actionPointsMax} onChange={(e) => updateActor({ actionPointsMax: Math.max(0, parseInt(e.target.value) || 0) })} />
               </div>
             </div>
-            {/* Sprite Sheet Preview */}
-            <SpriteSheetViewer src={actor.spriteSheet} label="Sprite Sheet Preview" />
+            <SpriteSheetViewer src={resolveImage(actor.spriteSheet)} label="Sprite Sheet Preview" />
           </CardContent>
         </Card>
 
-        {/* Skills */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-foreground">Skills</h2>
@@ -148,7 +177,9 @@ const Index = () => {
               skill={skill}
               actorRace={actor.race}
               actorJob={actor.job}
-              spriteSheet={actor.spriteSheet}
+              spriteSheet={resolveImage(actor.spriteSheet)}
+              resolveImage={resolveImage}
+              onUploadImage={uploadImage}
               onChange={(s) => {
                 const skills = [...actor.skills];
                 skills[i] = s;
