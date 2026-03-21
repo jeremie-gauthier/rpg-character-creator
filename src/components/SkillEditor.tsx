@@ -15,7 +15,7 @@ import type {
 import { ChevronDown, Trash2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ImagePlus } from "lucide-react";
-import { IconPreview, SpriteSheetViewer } from "./SpriteSheetViewer";
+import { IconPreview } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
 
 const AUDIO_IDS = ["footstep", "door", "chest", "chest_close", "ui_click", "sword_attack", "hurt"] as const;
