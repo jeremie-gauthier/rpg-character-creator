@@ -129,6 +129,7 @@ const Index = () => {
             {/* Sprite Sheet Preview */}
             <SpriteSheetViewer src={actor.spriteSheet} label="Sprite Sheet Preview" />
           </CardContent>
+        </Card>
 
         {/* Skills */}
         <div className="space-y-3">
