@@ -11,23 +11,50 @@ import type {
   SkillConstraint,
   SideEffect,
   AnimationDefinition,
-  FrameEvent,
 } from "@/types/actor";
 import { ChevronDown, Trash2, Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { IconPreview, SpriteSheetViewer } from "./SpriteSheetViewer";
+import { AnimationPreview } from "./AnimationPreview";
 
 const AUDIO_IDS = ["footstep", "door", "chest", "chest_close", "ui_click", "sword_attack", "hurt"] as const;
 
 interface SkillEditorProps {
   skill: Skill;
+  actorRace: string;
+  actorJob: string;
+  spriteSheet: string;
   onChange: (skill: Skill) => void;
   onDelete: () => void;
 }
 
-export function SkillEditor({ skill, onChange, onDelete }: SkillEditorProps) {
+function generateSkillId(race: string, job: string, name: string): string {
+  const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return `${slugify(race)}-${slugify(job)}-${slugify(name)}`;
+}
+
+export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, onChange, onDelete }: SkillEditorProps) {
   const [open, setOpen] = useState(true);
 
-  const update = (partial: Partial<Skill>) => onChange({ ...skill, ...partial });
+  const update = (partial: Partial<Skill>) => {
+    const merged = { ...skill, ...partial };
+    // Auto-generate ID from name
+    if ("name" in partial) {
+      merged.id = generateSkillId(actorRace, actorJob, merged.name);
+    }
+    onChange(merged);
+  };
+
+  // Regenerate ID when race/job changes
+  useEffect(() => {
+    const newId = generateSkillId(actorRace, actorJob, skill.name);
+    if (newId !== skill.id && skill.name) {
+      onChange({ ...skill, id: newId });
+    }
+  }, [actorRace, actorJob]);
+
+  const hasSanityReq = skill.requirements.some((r) => r.type === "sanity_form");
+  const existingConstraintTypes = skill.constraints.map((c) => c.type);
 
   return (
     <Card className="border-border">
@@ -38,17 +65,20 @@ export function SkillEditor({ skill, onChange, onDelete }: SkillEditorProps) {
               <ChevronDown className={`h-4 w-4 transition-transform ${open ? "" : "-rotate-90"}`} />
               <CardTitle className="text-base">{skill.name || "Unnamed Skill"}</CardTitle>
             </CollapsibleTrigger>
-            <Button variant="ghost" size="icon" onClick={onDelete} className="h-8 w-8 text-destructive">
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <IconPreview src={skill.icon} />
+              <Button variant="ghost" size="icon" onClick={onDelete} className="h-8 w-8 text-destructive">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-0">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <Label>ID</Label>
-                <Input value={skill.id} onChange={(e) => update({ id: e.target.value })} placeholder="skill-id" />
+                <Label>ID (auto)</Label>
+                <Input value={skill.id} readOnly className="bg-muted text-muted-foreground" />
               </div>
               <div>
                 <Label>Name</Label>
@@ -68,7 +98,7 @@ export function SkillEditor({ skill, onChange, onDelete }: SkillEditorProps) {
                   <Button size="sm" variant="outline" onClick={() => update({ requirements: [...skill.requirements, { type: "resource_cost", resource: "ACTION_POINTS", amount: 1 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Resource
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ requirements: [...skill.requirements, { type: "sanity_form", expectedForm: "PURE" }] })}>
+                  <Button size="sm" variant="outline" disabled={hasSanityReq} onClick={() => update({ requirements: [...skill.requirements, { type: "sanity_form", expectedForm: "PURE" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Sanity
                   </Button>
                 </div>
@@ -83,13 +113,13 @@ export function SkillEditor({ skill, onChange, onDelete }: SkillEditorProps) {
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-foreground">Constraints</h4>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "range", minRange: 0, maxRange: 1 }] })}>
+                  <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("range")} onClick={() => update({ constraints: [...skill.constraints, { type: "range", minRange: 0, maxRange: 1 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Range
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cast", isInLine: false }] })}>
+                  <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("cast")} onClick={() => update({ constraints: [...skill.constraints, { type: "cast", isInLine: false }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Cast
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "line_of_sight", hasLineOfSight: true }] })}>
+                  <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("line_of_sight")} onClick={() => update({ constraints: [...skill.constraints, { type: "line_of_sight", hasLineOfSight: true }] })}>
                     <Plus className="h-3 w-3 mr-1" /> LoS
                   </Button>
                 </div>
@@ -110,10 +140,13 @@ export function SkillEditor({ skill, onChange, onDelete }: SkillEditorProps) {
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "charge-target" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Charge
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "pull-target" }] })}>
+                    <Plus className="h-3 w-3 mr-1" /> Pull
+                  </Button>
                 </div>
               </div>
               {skill.sideEffects.map((se, si) => (
-                <SideEffectRow key={si} effect={se} onChange={(v) => { const a = [...skill.sideEffects]; a[si] = v; update({ sideEffects: a }); }} onDelete={() => update({ sideEffects: skill.sideEffects.filter((_, i) => i !== si) })} />
+                <SideEffectRow key={si} effect={se} spriteSheet={spriteSheet} onChange={(v) => { const a = [...skill.sideEffects]; a[si] = v; update({ sideEffects: a }); }} onDelete={() => update({ sideEffects: skill.sideEffects.filter((_, i) => i !== si) })} />
               ))}
             </section>
           </CardContent>
@@ -180,57 +213,77 @@ function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillCo
   );
 }
 
-function SideEffectRow({ effect, onChange, onDelete }: { effect: SideEffect; onChange: (e: SideEffect) => void; onDelete: () => void }) {
-  if (effect.type === "charge-target") {
+function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: SideEffect; spriteSheet: string; onChange: (e: SideEffect) => void; onDelete: () => void }) {
+  if (effect.type === "charge-target" || effect.type === "pull-target") {
     return (
       <div className="flex items-center gap-2 bg-muted rounded-md p-2">
-        <span className="text-xs font-medium text-muted-foreground">charge-target</span>
+        <span className="text-xs font-medium text-muted-foreground">{effect.type}</span>
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
       </div>
     );
   }
+
+  const damageEffect = effect;
 
   return (
     <div className="bg-muted rounded-md p-2 space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">damage-target</span>
         <Label className="text-xs">Min</Label>
-        <Input type="number" className="h-8 w-16" value={effect.damageMin} onChange={(e) => onChange({ ...effect, damageMin: parseInt(e.target.value) || 0 })} />
+        <Input type="number" className="h-8 w-16" value={damageEffect.damageMin} onChange={(e) => onChange({ ...damageEffect, damageMin: parseInt(e.target.value) || 0 })} />
         <Label className="text-xs">Max</Label>
-        <Input type="number" className="h-8 w-16" value={effect.damageMax} onChange={(e) => onChange({ ...effect, damageMax: parseInt(e.target.value) || 0 })} />
+        <Input type="number" className="h-8 w-16" value={damageEffect.damageMax} onChange={(e) => onChange({ ...damageEffect, damageMax: parseInt(e.target.value) || 0 })} />
         <div className="flex items-center gap-1">
-          <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
+          <Checkbox checked={!!damageEffect.loop} onCheckedChange={(v) => onChange({ ...damageEffect, loop: !!v })} />
           <Label className="text-xs">Loop</Label>
         </div>
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
       </div>
 
       {/* Animation frames */}
-      <div className="pl-4 space-y-1">
+      <div className="pl-4 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">Animation Frames</span>
-          <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
+          <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...damageEffect, animation: [...(damageEffect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
             <Plus className="h-3 w-3 mr-1" /> Frame
           </Button>
         </div>
-        {(effect.animation || []).map((frame, fi) => (
+
+        {/* Sprite sheet for column picking */}
+        <SpriteSheetViewer
+          src={spriteSheet}
+          label="Click column to set for selected frame"
+          selectedColumns={(damageEffect.animation || []).map((f) => f.columnIdx)}
+        />
+
+        {(damageEffect.animation || []).map((frame, fi) => (
           <AnimationFrameRow
             key={fi}
             frame={frame}
+            spriteSheet={spriteSheet}
             onChange={(f) => {
-              const anim = [...(effect.animation || [])];
+              const anim = [...(damageEffect.animation || [])];
               anim[fi] = f;
-              onChange({ ...effect, animation: anim });
+              onChange({ ...damageEffect, animation: anim });
             }}
-            onDelete={() => onChange({ ...effect, animation: (effect.animation || []).filter((_, i) => i !== fi) })}
+            onDelete={() => onChange({ ...damageEffect, animation: (damageEffect.animation || []).filter((_, i) => i !== fi) })}
           />
         ))}
+
+        {/* Animation preview */}
+        {(damageEffect.animation || []).length > 0 && (
+          <AnimationPreview
+            spriteSheetSrc={spriteSheet}
+            frames={damageEffect.animation || []}
+            loop={!!damageEffect.loop}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-function AnimationFrameRow({ frame, onChange, onDelete }: { frame: AnimationDefinition; onChange: (f: AnimationDefinition) => void; onDelete: () => void }) {
+function AnimationFrameRow({ frame, spriteSheet, onChange, onDelete }: { frame: AnimationDefinition; spriteSheet: string; onChange: (f: AnimationDefinition) => void; onDelete: () => void }) {
   return (
     <div className="bg-background rounded p-2 space-y-1">
       <div className="flex items-center gap-2">

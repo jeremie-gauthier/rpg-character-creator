@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkillEditor } from "@/components/SkillEditor";
+import { SpriteSheetViewer } from "@/components/SpriteSheetViewer";
 import { createDefaultActor, createDefaultSkill, type Actor } from "@/types/actor";
 import { Download, Upload, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -125,6 +126,8 @@ const Index = () => {
                 <Input type="number" min={0} value={actor.actionPointsMax} onChange={(e) => updateActor({ actionPointsMax: Math.max(0, parseInt(e.target.value) || 0) })} />
               </div>
             </div>
+            {/* Sprite Sheet Preview */}
+            <SpriteSheetViewer src={actor.spriteSheet} label="Sprite Sheet Preview" />
           </CardContent>
         </Card>
 
@@ -143,6 +146,9 @@ const Index = () => {
             <SkillEditor
               key={i}
               skill={skill}
+              actorRace={actor.race}
+              actorJob={actor.job}
+              spriteSheet={actor.spriteSheet}
               onChange={(s) => {
                 const skills = [...actor.skills];
                 skills[i] = s;
