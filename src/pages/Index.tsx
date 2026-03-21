@@ -126,8 +126,9 @@ const Index = () => {
                 <Input type="number" min={0} value={actor.actionPointsMax} onChange={(e) => updateActor({ actionPointsMax: Math.max(0, parseInt(e.target.value) || 0) })} />
               </div>
             </div>
+            {/* Sprite Sheet Preview */}
+            <SpriteSheetViewer src={actor.spriteSheet} label="Sprite Sheet Preview" />
           </CardContent>
-        </Card>
 
         {/* Skills */}
         <div className="space-y-3">
