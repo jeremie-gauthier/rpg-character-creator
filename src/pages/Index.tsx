@@ -143,6 +143,9 @@ const Index = () => {
             <SkillEditor
               key={i}
               skill={skill}
+              actorRace={actor.race}
+              actorJob={actor.job}
+              spriteSheet={actor.spriteSheet}
               onChange={(s) => {
                 const skills = [...actor.skills];
                 skills[i] = s;
