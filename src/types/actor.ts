@@ -17,7 +17,8 @@ export type SideEffect =
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
-  | { type: "charge-target" };
+  | { type: "charge-target" }
+  | { type: "pull-target" };
 
 export type SkillRequirement =
   | {
