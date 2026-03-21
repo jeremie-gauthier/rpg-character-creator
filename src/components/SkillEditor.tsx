@@ -35,7 +35,7 @@ function generateSkillId(race: string, job: string, name: string): string {
   return `${slugify(race)}-${slugify(job)}-${slugify(name)}`;
 }
 
-export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, onChange, onDelete }: SkillEditorProps) {
+export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveImage, onUploadImage, onChange, onDelete }: SkillEditorProps) {
   const [open, setOpen] = useState(true);
 
   const update = (partial: Partial<Skill>) => {
