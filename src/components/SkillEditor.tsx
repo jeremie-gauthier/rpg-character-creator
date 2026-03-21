@@ -69,7 +69,7 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
               <CardTitle className="text-base">{skill.name || "Unnamed Skill"}</CardTitle>
             </CollapsibleTrigger>
             <div className="flex items-center gap-2">
-              <IconPreview src={skill.icon} />
+              <IconPreview src={resolveImage(skill.icon)} />
               <Button variant="ghost" size="icon" onClick={onDelete} className="h-8 w-8 text-destructive">
                 <Trash2 className="h-4 w-4" />
               </Button>
