@@ -15,6 +15,8 @@ export type SideEffect =
       damageMin: number;
       damageMax: number;
       radius: number;
+      minRadius?: number;
+      shape?: "diamond" | "square" | "circle" | "cross";
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
