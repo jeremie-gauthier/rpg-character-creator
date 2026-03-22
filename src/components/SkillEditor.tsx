@@ -17,6 +17,7 @@ import { useState, useEffect } from "react";
 import { ImagePlus } from "lucide-react";
 import { IconPreview } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
+import { AoePreview } from "./AoePreview";
 
 const AUDIO_IDS = ["footstep", "door", "chest", "chest_close", "ui_click", "sword_attack", "hurt"] as const;
 
