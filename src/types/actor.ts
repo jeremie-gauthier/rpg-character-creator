@@ -14,6 +14,7 @@ export type SideEffect =
       type: "damage-target";
       damageMin: number;
       damageMax: number;
+      radius: number;
       animation?: AnimationDefinition[];
       loop?: boolean;
     }

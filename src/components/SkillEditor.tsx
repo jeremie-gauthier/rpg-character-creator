@@ -253,6 +253,8 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         <Input type="number" className="h-8 w-16" value={damageEffect.damageMin} onChange={(e) => onChange({ ...damageEffect, damageMin: parseInt(e.target.value) || 0 })} />
         <Label className="text-xs">Max</Label>
         <Input type="number" className="h-8 w-16" value={damageEffect.damageMax} onChange={(e) => onChange({ ...damageEffect, damageMax: parseInt(e.target.value) || 0 })} />
+        <Label className="text-xs">Radius</Label>
+        <Input type="number" className="h-8 w-16" value={damageEffect.radius} onChange={(e) => onChange({ ...damageEffect, radius: parseInt(e.target.value) || 1 })} min={1} />
         <div className="flex items-center gap-1">
           <Checkbox checked={!!damageEffect.loop} onCheckedChange={(v) => onChange({ ...damageEffect, loop: !!v })} />
           <Label className="text-xs">Loop</Label>
