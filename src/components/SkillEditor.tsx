@@ -59,8 +59,20 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
   const hasSanityReq = skill.requirements.some((r) => r.type === "sanity_form");
   const existingConstraintTypes = skill.constraints.map((c) => c.type);
 
+  const sanityReq = skill.requirements.find((r) => r.type === "sanity_form") as Extract<SkillRequirement, { type: "sanity_form" }> | undefined;
+  const cardBorderColor = sanityReq
+    ? sanityReq.expectedForm === "PURE"
+      ? "border-l-4"
+      : "border-l-4"
+    : "";
+  const cardBorderStyle = sanityReq
+    ? sanityReq.expectedForm === "PURE"
+      ? { borderLeftColor: "#B84F4C" }
+      : { borderLeftColor: "#827490" }
+    : {};
+
   return (
-    <Card className="border-border">
+    <Card className={`border-border ${cardBorderColor}`} style={cardBorderStyle}>
       <Collapsible open={open} onOpenChange={setOpen}>
         <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between">
@@ -124,7 +136,7 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                   <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("range")} onClick={() => update({ constraints: [...skill.constraints, { type: "range", minRange: 0, maxRange: 1 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Range
                   </Button>
-                  <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("cast")} onClick={() => update({ constraints: [...skill.constraints, { type: "cast", isInLine: false }] })}>
+                  <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("cast")} onClick={() => update({ constraints: [...skill.constraints, { type: "cast", isInLine: true }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Cast
                   </Button>
                   <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("line_of_sight")} onClick={() => update({ constraints: [...skill.constraints, { type: "line_of_sight", hasLineOfSight: true }] })}>
@@ -142,7 +154,7 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-foreground">Side Effects</h4>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1 }] })}>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1, radius: 1 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Damage
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "charge-target" }] })}>
@@ -241,6 +253,8 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         <Input type="number" className="h-8 w-16" value={damageEffect.damageMin} onChange={(e) => onChange({ ...damageEffect, damageMin: parseInt(e.target.value) || 0 })} />
         <Label className="text-xs">Max</Label>
         <Input type="number" className="h-8 w-16" value={damageEffect.damageMax} onChange={(e) => onChange({ ...damageEffect, damageMax: parseInt(e.target.value) || 0 })} />
+        <Label className="text-xs">Radius</Label>
+        <Input type="number" className="h-8 w-16" value={damageEffect.radius} onChange={(e) => onChange({ ...damageEffect, radius: parseInt(e.target.value) || 1 })} min={1} />
         <div className="flex items-center gap-1">
           <Checkbox checked={!!damageEffect.loop} onCheckedChange={(v) => onChange({ ...damageEffect, loop: !!v })} />
           <Label className="text-xs">Loop</Label>
