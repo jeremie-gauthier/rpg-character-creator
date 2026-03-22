@@ -29,6 +29,7 @@ interface SkillEditorProps {
   onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
   onChange: (skill: Skill) => void;
   onDelete: () => void;
+  defaultOpen?: boolean;
 }
 
 function generateSkillId(race: string, job: string, name: string): string {
