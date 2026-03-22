@@ -255,13 +255,47 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         <Input type="number" className="h-8 w-16" value={damageEffect.damageMin} onChange={(e) => onChange({ ...damageEffect, damageMin: parseInt(e.target.value) || 0 })} />
         <Label className="text-xs">Max</Label>
         <Input type="number" className="h-8 w-16" value={damageEffect.damageMax} onChange={(e) => onChange({ ...damageEffect, damageMax: parseInt(e.target.value) || 0 })} />
-        <Label className="text-xs">Radius</Label>
-        <Input type="number" className="h-8 w-16" value={damageEffect.radius} onChange={(e) => onChange({ ...damageEffect, radius: parseInt(e.target.value) || 0 })} min={0} />
         <div className="flex items-center gap-1">
           <Checkbox checked={!!damageEffect.loop} onCheckedChange={(v) => onChange({ ...damageEffect, loop: !!v })} />
           <Label className="text-xs">Loop</Label>
         </div>
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+      </div>
+
+      {/* AoE Shape Block */}
+      <div className="bg-background rounded p-3 space-y-2">
+        <span className="text-xs font-semibold text-foreground">Area of Effect</span>
+        <div className="flex items-start gap-4">
+          <div className="space-y-2 flex-1">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs w-16 shrink-0">Shape</Label>
+              <Select value={damageEffect.shape || "diamond"} onValueChange={(v) => onChange({ ...damageEffect, shape: v as any })}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="diamond">Diamond</SelectItem>
+                  <SelectItem value="square">Square</SelectItem>
+                  <SelectItem value="circle">Circle</SelectItem>
+                  <SelectItem value="cross">Cross</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs w-16 shrink-0">Radius</Label>
+              <Input type="number" className="h-8 w-20" value={damageEffect.radius} onChange={(e) => onChange({ ...damageEffect, radius: parseInt(e.target.value) || 0 })} min={0} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs w-16 shrink-0">Min Radius</Label>
+              <Input type="number" className="h-8 w-20" value={damageEffect.minRadius ?? 0} onChange={(e) => onChange({ ...damageEffect, minRadius: parseInt(e.target.value) || 0 })} min={0} />
+            </div>
+          </div>
+          {damageEffect.radius > 0 && (
+            <AoePreview
+              radius={damageEffect.radius}
+              minRadius={damageEffect.minRadius ?? 0}
+              shape={damageEffect.shape || "diamond"}
+            />
+          )}
+        </div>
       </div>
 
       {/* Animation frames */}
@@ -272,7 +306,6 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
             <Plus className="h-3 w-3 mr-1" /> Frame
           </Button>
         </div>
-
 
         {(damageEffect.animation || []).map((frame, fi) => (
           <AnimationFrameRow
