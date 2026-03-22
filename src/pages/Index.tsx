@@ -82,6 +82,8 @@ const Index = () => {
     toast.success("JSON exported!");
   };
 
+  const [skillsCollapsed, setSkillsCollapsed] = useState(false);
+
   const loadJson = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -90,6 +92,7 @@ const Index = () => {
       try {
         const data = JSON.parse(ev.target?.result as string) as Actor;
         setActor(data);
+        setSkillsCollapsed(true);
         toast.success("Actor loaded!");
       } catch {
         toast.error("Invalid JSON file.");
