@@ -32,12 +32,13 @@ function isInShape(dx: number, dy: number, radius: number, minRadius: number, sh
 
 export function AoePreview({ radius, minRadius, shape }: AoePreviewProps) {
   const gridSize = Math.max(radius, 1);
-  const cells: { x: number; y: number; type: "actor" | "aoe" | "empty" }[] = [];
+  const actorInShape = isInShape(0, 0, radius, minRadius, shape);
+  const cells: { x: number; y: number; type: "actor" | "actor-aoe" | "aoe" | "empty" }[] = [];
 
   for (let dy = -gridSize; dy <= gridSize; dy++) {
     for (let dx = -gridSize; dx <= gridSize; dx++) {
       if (dx === 0 && dy === 0) {
-        cells.push({ x: dx, y: dy, type: "actor" });
+        cells.push({ x: dx, y: dy, type: actorInShape ? "actor-aoe" : "actor" });
       } else if (isInShape(dx, dy, radius, minRadius, shape)) {
         cells.push({ x: dx, y: dy, type: "aoe" });
       } else {
@@ -61,11 +62,26 @@ export function AoePreview({ radius, minRadius, shape }: AoePreviewProps) {
         <div
           key={i}
           className={
-            cell.type === "actor"
-              ? "bg-blue-500"
-              : cell.type === "aoe"
-                ? "bg-red-500"
-                : "bg-muted/40"
+            cell.type === "aoe"
+              ? "bg-red-500"
+              : cell.type === "actor"
+                ? "bg-blue-500"
+                : cell.type === "empty"
+                  ? "bg-muted/40"
+                  : ""
+          }
+          style={
+            cell.type === "actor-aoe"
+              ? {
+                  background: `repeating-linear-gradient(
+                    45deg,
+                    #3b82f6,
+                    #3b82f6 ${Math.max(2, cellSize / 4)}px,
+                    #ef4444 ${Math.max(2, cellSize / 4)}px,
+                    #ef4444 ${Math.max(4, cellSize / 2)}px
+                  )`,
+                }
+              : undefined
           }
         />
       ))}
