@@ -82,6 +82,8 @@ const Index = () => {
     toast.success("JSON exported!");
   };
 
+  const [skillsCollapsed, setSkillsCollapsed] = useState(false);
+
   const loadJson = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -90,6 +92,7 @@ const Index = () => {
       try {
         const data = JSON.parse(ev.target?.result as string) as Actor;
         setActor(data);
+        setSkillsCollapsed(true);
         toast.success("Actor loaded!");
       } catch {
         toast.error("Invalid JSON file.");
@@ -162,12 +165,7 @@ const Index = () => {
         </Card>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-foreground">Skills</h2>
-            <Button size="sm" onClick={() => updateActor({ skills: [...actor.skills, createDefaultSkill()] })}>
-              <Plus className="h-4 w-4 mr-1" /> Add Skill
-            </Button>
-          </div>
+          <h2 className="text-base font-bold text-foreground">Skills</h2>
           {actor.skills.length === 0 && (
             <p className="text-sm text-muted-foreground py-8 text-center">No skills yet. Add one to get started.</p>
           )}
@@ -180,6 +178,7 @@ const Index = () => {
               spriteSheet={resolveImage(actor.spriteSheet)}
               resolveImage={resolveImage}
               onUploadImage={uploadImage}
+              defaultOpen={!skillsCollapsed}
               onChange={(s) => {
                 const skills = [...actor.skills];
                 skills[i] = s;
@@ -188,6 +187,9 @@ const Index = () => {
               onDelete={() => updateActor({ skills: actor.skills.filter((_, si) => si !== i) })}
             />
           ))}
+          <Button size="sm" className="w-full" onClick={() => { setSkillsCollapsed(false); updateActor({ skills: [...actor.skills, createDefaultSkill()] }); }}>
+            <Plus className="h-4 w-4 mr-1" /> Add Skill
+          </Button>
         </div>
       </main>
     </div>

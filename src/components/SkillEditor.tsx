@@ -29,6 +29,7 @@ interface SkillEditorProps {
   onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
   onChange: (skill: Skill) => void;
   onDelete: () => void;
+  defaultOpen?: boolean;
 }
 
 function generateSkillId(race: string, job: string, name: string): string {
@@ -36,8 +37,8 @@ function generateSkillId(race: string, job: string, name: string): string {
   return `${slugify(race)}-${slugify(job)}-${slugify(name)}`;
 }
 
-export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveImage, onUploadImage, onChange, onDelete }: SkillEditorProps) {
-  const [open, setOpen] = useState(true);
+export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveImage, onUploadImage, onChange, onDelete, defaultOpen = true }: SkillEditorProps) {
+  const [open, setOpen] = useState(defaultOpen);
 
   const update = (partial: Partial<Skill>) => {
     const merged = { ...skill, ...partial };
