@@ -154,7 +154,7 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-foreground">Side Effects</h4>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1 }] })}>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1, radius: 1 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Damage
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "charge-target" }] })}>
