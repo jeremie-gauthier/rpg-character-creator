@@ -154,7 +154,7 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-foreground">Side Effects</h4>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1, radius: 1 }] })}>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1, radius: 0 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Damage
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "charge-target" }] })}>
@@ -254,7 +254,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         <Label className="text-xs">Max</Label>
         <Input type="number" className="h-8 w-16" value={damageEffect.damageMax} onChange={(e) => onChange({ ...damageEffect, damageMax: parseInt(e.target.value) || 0 })} />
         <Label className="text-xs">Radius</Label>
-        <Input type="number" className="h-8 w-16" value={damageEffect.radius} onChange={(e) => onChange({ ...damageEffect, radius: parseInt(e.target.value) || 1 })} min={1} />
+        <Input type="number" className="h-8 w-16" value={damageEffect.radius} onChange={(e) => onChange({ ...damageEffect, radius: parseInt(e.target.value) || 0 })} min={0} />
         <div className="flex items-center gap-1">
           <Checkbox checked={!!damageEffect.loop} onCheckedChange={(v) => onChange({ ...damageEffect, loop: !!v })} />
           <Label className="text-xs">Loop</Label>
