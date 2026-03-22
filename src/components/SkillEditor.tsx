@@ -59,8 +59,20 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
   const hasSanityReq = skill.requirements.some((r) => r.type === "sanity_form");
   const existingConstraintTypes = skill.constraints.map((c) => c.type);
 
+  const sanityReq = skill.requirements.find((r) => r.type === "sanity_form") as Extract<SkillRequirement, { type: "sanity_form" }> | undefined;
+  const cardBorderColor = sanityReq
+    ? sanityReq.expectedForm === "PURE"
+      ? "border-l-4"
+      : "border-l-4"
+    : "";
+  const cardBorderStyle = sanityReq
+    ? sanityReq.expectedForm === "PURE"
+      ? { borderLeftColor: "#B84F4C" }
+      : { borderLeftColor: "#827490" }
+    : {};
+
   return (
-    <Card className="border-border">
+    <Card className={`border-border ${cardBorderColor}`} style={cardBorderStyle}>
       <Collapsible open={open} onOpenChange={setOpen}>
         <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between">
