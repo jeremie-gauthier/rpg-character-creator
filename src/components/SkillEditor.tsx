@@ -136,7 +136,7 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                   <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("range")} onClick={() => update({ constraints: [...skill.constraints, { type: "range", minRange: 0, maxRange: 1 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Range
                   </Button>
-                  <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("cast")} onClick={() => update({ constraints: [...skill.constraints, { type: "cast", isInLine: false }] })}>
+                  <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("cast")} onClick={() => update({ constraints: [...skill.constraints, { type: "cast", isInLine: true }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Cast
                   </Button>
                   <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("line_of_sight")} onClick={() => update({ constraints: [...skill.constraints, { type: "line_of_sight", hasLineOfSight: true }] })}>
