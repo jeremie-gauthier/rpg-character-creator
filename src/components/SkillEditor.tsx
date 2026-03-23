@@ -159,6 +159,9 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Damage
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "heal-target", healMin: 0, healMax: 1 }] })}>
+                    <Plus className="h-3 w-3 mr-1" /> Heal
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "charge-target" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Charge
                   </Button>
