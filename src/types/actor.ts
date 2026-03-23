@@ -20,6 +20,16 @@ export type SideEffect =
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
+  | {
+      type: "heal-target";
+      healMin: number;
+      healMax: number;
+      radius?: number;
+      minRadius?: number;
+      shape?: "diamond" | "square" | "circle" | "cross";
+      animation?: AnimationDefinition[];
+      loop?: boolean;
+    }
   | { type: "charge-target" }
   | { type: "pull-target" };
 
