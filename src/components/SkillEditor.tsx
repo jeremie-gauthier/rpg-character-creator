@@ -11,6 +11,8 @@ import type {
   SkillConstraint,
   SideEffect,
   AnimationDefinition,
+  AoeShape,
+  ConditionJson,
 } from "@/types/actor";
 import { ChevronDown, Trash2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -20,6 +22,8 @@ import { AnimationPreview } from "./AnimationPreview";
 import { AoePreview } from "./AoePreview";
 
 const AUDIO_IDS = ["footstep", "door", "chest", "chest_close", "ui_click", "sword_attack", "hurt"] as const;
+const AOE_SHAPES: AoeShape[] = ["diamond", "square", "circle", "cross", "diagonal"];
+const AOE_SHAPES_NO_DIAGONAL: AoeShape[] = ["diamond", "square", "circle", "cross"];
 
 interface SkillEditorProps {
   skill: Skill;
@@ -43,14 +47,12 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
 
   const update = (partial: Partial<Skill>) => {
     const merged = { ...skill, ...partial };
-    // Auto-generate ID from name
     if ("name" in partial) {
       merged.id = generateSkillId(actorRace, actorJob, merged.name);
     }
     onChange(merged);
   };
 
-  // Regenerate ID when race/job changes
   useEffect(() => {
     const newId = generateSkillId(actorRace, actorJob, skill.name);
     if (newId !== skill.id && skill.name) {
@@ -59,14 +61,10 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
   }, [actorRace, actorJob]);
 
   const hasSanityReq = skill.requirements.some((r) => r.type === "sanity_form");
-  const existingConstraintTypes = skill.constraints.map((c) => c.type);
+  const hasConstraint = skill.constraints.length > 0;
 
   const sanityReq = skill.requirements.find((r) => r.type === "sanity_form") as Extract<SkillRequirement, { type: "sanity_form" }> | undefined;
-  const cardBorderColor = sanityReq
-    ? sanityReq.expectedForm === "PURE"
-      ? "border-l-4"
-      : "border-l-4"
-    : "";
+  const cardBorderColor = sanityReq ? "border-l-4" : "";
   const cardBorderStyle = sanityReq
     ? sanityReq.expectedForm === "PURE"
       ? { borderLeftColor: "#B84F4C" }
@@ -130,21 +128,15 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
               ))}
             </section>
 
-            {/* Constraints */}
+            {/* Constraint (single cast constraint) */}
             <section className="space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-foreground">Constraints</h4>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("range")} onClick={() => update({ constraints: [...skill.constraints, { type: "range", minRange: 0, maxRange: 1 }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Range
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("cast")} onClick={() => update({ constraints: [...skill.constraints, { type: "cast", isInLine: true }] })}>
+                <h4 className="text-sm font-semibold text-foreground">Constraint</h4>
+                {!hasConstraint && (
+                  <Button size="sm" variant="outline" onClick={() => update({ constraints: [{ type: "cast", minRange: 0, maxRange: 1 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Cast
                   </Button>
-                  <Button size="sm" variant="outline" disabled={existingConstraintTypes.includes("line_of_sight")} onClick={() => update({ constraints: [...skill.constraints, { type: "line_of_sight", hasLineOfSight: true }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> LoS
-                  </Button>
-                </div>
+                )}
               </div>
               {skill.constraints.map((c, ci) => (
                 <ConstraintRow key={ci} constraint={c} onChange={(v) => { const a = [...skill.constraints]; a[ci] = v; update({ constraints: a }); }} onDelete={() => update({ constraints: skill.constraints.filter((_, i) => i !== ci) })} />
@@ -161,6 +153,9 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "heal-target", healMin: 0, healMax: 1 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Heal
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-condition", condition: { name: "damageReduction", durationMax: 1 } }] })}>
+                    <Plus className="h-3 w-3 mr-1" /> Condition
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "charge-target" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Charge
@@ -212,28 +207,82 @@ function RequirementRow({ req, onChange, onDelete }: { req: SkillRequirement; on
 }
 
 function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillConstraint; onChange: (c: SkillConstraint) => void; onDelete: () => void }) {
+  const shape = constraint.shape || "diamond";
+  const radius = constraint.maxRange;
+  const minRadius = constraint.minRange;
+
   return (
-    <div className="flex items-center gap-2 bg-muted rounded-md p-2">
-      <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">{constraint.type}</span>
-      {constraint.type === "range" ? (
-        <>
-          <Label className="text-xs">Min</Label>
-          <Input type="number" className="h-8 w-16" value={constraint.minRange} onChange={(e) => onChange({ ...constraint, minRange: parseInt(e.target.value) || 0 })} />
-          <Label className="text-xs">Max</Label>
-          <Input type="number" className="h-8 w-16" value={constraint.maxRange} onChange={(e) => onChange({ ...constraint, maxRange: parseInt(e.target.value) || 0 })} />
-        </>
-      ) : constraint.type === "cast" ? (
-        <div className="flex items-center gap-2">
-          <Checkbox checked={constraint.isInLine} onCheckedChange={(v) => onChange({ ...constraint, isInLine: !!v })} />
-          <Label className="text-xs">In Line</Label>
+    <div className="bg-muted rounded-md p-2 space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground w-16 shrink-0">cast</span>
+        <Label className="text-xs">Min</Label>
+        <Input type="number" className="h-8 w-16" value={constraint.minRange} onChange={(e) => onChange({ ...constraint, minRange: parseInt(e.target.value) || 0 })} min={0} />
+        <Label className="text-xs">Max</Label>
+        <Input type="number" className="h-8 w-16" value={constraint.maxRange} onChange={(e) => onChange({ ...constraint, maxRange: parseInt(e.target.value) || 0 })} min={0} />
+        <div className="flex items-center gap-1">
+          <Checkbox checked={!!constraint.hasLineOfSight} onCheckedChange={(v) => onChange({ ...constraint, hasLineOfSight: !!v })} />
+          <Label className="text-xs">LoS</Label>
         </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <Checkbox checked={constraint.hasLineOfSight} onCheckedChange={(v) => onChange({ ...constraint, hasLineOfSight: !!v })} />
-          <Label className="text-xs">Has LoS</Label>
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+      </div>
+
+      {/* Shape & preview */}
+      <div className="bg-background rounded p-3 space-y-2">
+        <span className="text-xs font-semibold text-foreground">Range Shape</span>
+        <div className="flex items-start gap-4">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs w-16 shrink-0">Shape</Label>
+            <Select value={shape} onValueChange={(v) => onChange({ ...constraint, shape: v as AoeShape })}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {AOE_SHAPES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {radius > 0 && (
+            <AoePreview radius={radius} minRadius={minRadius} shape={shape} />
+          )}
         </div>
-      )}
-      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+      </div>
+    </div>
+  );
+}
+
+/** Shared AoE block for side effects that support radius/minRadius/shape */
+function AoeBlock({ radius, minRadius, shape, shapes, onChange }: {
+  radius: number;
+  minRadius: number;
+  shape: AoeShape;
+  shapes: AoeShape[];
+  onChange: (patch: { radius?: number; minRadius?: number; shape?: AoeShape }) => void;
+}) {
+  return (
+    <div className="bg-background rounded p-3 space-y-2">
+      <span className="text-xs font-semibold text-foreground">Area of Effect</span>
+      <div className="flex items-start gap-4">
+        <div className="space-y-2 flex-1">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs w-16 shrink-0">Shape</Label>
+            <Select value={shape} onValueChange={(v) => onChange({ shape: v as AoeShape })}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {shapes.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs w-16 shrink-0">Radius</Label>
+            <Input type="number" className="h-8 w-20" value={radius} onChange={(e) => onChange({ radius: parseInt(e.target.value) || 0 })} min={0} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs w-16 shrink-0">Min Radius</Label>
+            <Input type="number" className="h-8 w-20" value={minRadius} onChange={(e) => onChange({ minRadius: parseInt(e.target.value) || 0 })} min={0} />
+          </div>
+        </div>
+        {radius > 0 && (
+          <AoePreview radius={radius} minRadius={minRadius} shape={shape} />
+        )}
+      </div>
     </div>
   );
 }
@@ -248,6 +297,39 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
     );
   }
 
+  if (effect.type === "apply-condition") {
+    const radius = effect.radius ?? 0;
+    const minRadius = effect.minRadius ?? 0;
+    const shape = effect.shape || "diamond";
+
+    return (
+      <div className="bg-muted rounded-md p-2 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">apply-condition</span>
+          <Label className="text-xs">Condition</Label>
+          <Select value={effect.condition.name} onValueChange={(v) => onChange({ ...effect, condition: { ...effect.condition, name: v as ConditionJson["name"] } })}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="damageReduction">damageReduction</SelectItem>
+            </SelectContent>
+          </Select>
+          <Label className="text-xs">Duration</Label>
+          <Input type="number" className="h-8 w-16" value={effect.condition.durationMax} onChange={(e) => onChange({ ...effect, condition: { ...effect.condition, durationMax: parseInt(e.target.value) || 1 } })} min={1} />
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        </div>
+
+        <AoeBlock
+          radius={radius}
+          minRadius={minRadius}
+          shape={shape}
+          shapes={AOE_SHAPES}
+          onChange={(patch) => onChange({ ...effect, ...patch })}
+        />
+      </div>
+    );
+  }
+
+  // damage-target or heal-target
   const isDamage = effect.type === "damage-target";
   const label = isDamage ? "damage-target" : "heal-target";
   const valMin = isDamage ? effect.damageMin : effect.healMin;
@@ -279,37 +361,13 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
       </div>
 
-      {/* AoE Shape Block */}
-      <div className="bg-background rounded p-3 space-y-2">
-        <span className="text-xs font-semibold text-foreground">Area of Effect</span>
-        <div className="flex items-start gap-4">
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-2">
-              <Label className="text-xs w-16 shrink-0">Shape</Label>
-              <Select value={shape} onValueChange={(v) => onChange({ ...effect, shape: v as any })}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="diamond">Diamond</SelectItem>
-                  <SelectItem value="square">Square</SelectItem>
-                  <SelectItem value="circle">Circle</SelectItem>
-                  <SelectItem value="cross">Cross</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-xs w-16 shrink-0">Radius</Label>
-              <Input type="number" className="h-8 w-20" value={radius} onChange={(e) => onChange({ ...effect, radius: parseInt(e.target.value) || 0 })} min={0} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-xs w-16 shrink-0">Min Radius</Label>
-              <Input type="number" className="h-8 w-20" value={minRadius} onChange={(e) => onChange({ ...effect, minRadius: parseInt(e.target.value) || 0 })} min={0} />
-            </div>
-          </div>
-          {radius > 0 && (
-            <AoePreview radius={radius} minRadius={minRadius} shape={shape} />
-          )}
-        </div>
-      </div>
+      <AoeBlock
+        radius={radius}
+        minRadius={minRadius}
+        shape={shape}
+        shapes={AOE_SHAPES_NO_DIAGONAL}
+        onChange={(patch) => onChange({ ...effect, ...patch })}
+      />
 
       {/* Animation frames */}
       <div className="pl-4 space-y-2">
