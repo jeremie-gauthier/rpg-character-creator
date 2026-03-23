@@ -9,14 +9,16 @@ export interface AnimationDefinition {
   frameEvents?: FrameEvent[];
 }
 
+export type AoeShape = "diamond" | "square" | "circle" | "cross" | "diagonal";
+
 export type SideEffect =
   | {
       type: "damage-target";
       damageMin: number;
       damageMax: number;
-      radius: number;
+      radius?: number;
       minRadius?: number;
-      shape?: "diamond" | "square" | "circle" | "cross";
+      shape?: AoeShape;
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
@@ -26,12 +28,24 @@ export type SideEffect =
       healMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: "diamond" | "square" | "circle" | "cross";
+      shape?: AoeShape;
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
   | { type: "charge-target" }
-  | { type: "pull-target" };
+  | { type: "pull-target" }
+  | {
+      type: "apply-condition";
+      condition: ConditionJson;
+      radius?: number;
+      minRadius?: number;
+      shape?: AoeShape;
+    };
+
+export type ConditionJson = {
+  name: "damageReduction";
+  durationMax: number;
+};
 
 export type SkillRequirement =
   | {
@@ -44,10 +58,13 @@ export type SkillRequirement =
       expectedForm: "PURE" | "CORRUPTED";
     };
 
-export type SkillConstraint =
-  | { type: "range"; minRange: number; maxRange: number }
-  | { type: "cast"; isInLine: boolean }
-  | { type: "line_of_sight"; hasLineOfSight: boolean };
+export interface SkillConstraint {
+  type: "cast";
+  minRange: number;
+  maxRange: number;
+  shape?: AoeShape;
+  hasLineOfSight?: boolean;
+}
 
 export interface Skill {
   id: string;
