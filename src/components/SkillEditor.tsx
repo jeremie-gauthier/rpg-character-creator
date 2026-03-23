@@ -159,6 +159,9 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Damage
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "heal-target", healMin: 0, healMax: 1 }] })}>
+                    <Plus className="h-3 w-3 mr-1" /> Heal
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "charge-target" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Charge
                   </Button>
@@ -245,18 +248,32 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
     );
   }
 
-  const damageEffect = effect;
+  const isDamage = effect.type === "damage-target";
+  const label = isDamage ? "damage-target" : "heal-target";
+  const valMin = isDamage ? effect.damageMin : effect.healMin;
+  const valMax = isDamage ? effect.damageMax : effect.healMax;
+  const radius = effect.radius ?? 0;
+  const minRadius = effect.minRadius ?? 0;
+  const shape = effect.shape || "diamond";
+
+  const updateMinMax = (field: "min" | "max", val: number) => {
+    if (isDamage) {
+      onChange(field === "min" ? { ...effect, damageMin: val } : { ...effect, damageMax: val });
+    } else {
+      onChange(field === "min" ? { ...effect, healMin: val } : { ...effect, healMax: val });
+    }
+  };
 
   return (
     <div className="bg-muted rounded-md p-2 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">damage-target</span>
+        <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">{label}</span>
         <Label className="text-xs">Min</Label>
-        <Input type="number" className="h-8 w-16" value={damageEffect.damageMin} onChange={(e) => onChange({ ...damageEffect, damageMin: parseInt(e.target.value) || 0 })} />
+        <Input type="number" className="h-8 w-16" value={valMin} onChange={(e) => updateMinMax("min", parseInt(e.target.value) || 0)} />
         <Label className="text-xs">Max</Label>
-        <Input type="number" className="h-8 w-16" value={damageEffect.damageMax} onChange={(e) => onChange({ ...damageEffect, damageMax: parseInt(e.target.value) || 0 })} />
+        <Input type="number" className="h-8 w-16" value={valMax} onChange={(e) => updateMinMax("max", parseInt(e.target.value) || 0)} />
         <div className="flex items-center gap-1">
-          <Checkbox checked={!!damageEffect.loop} onCheckedChange={(v) => onChange({ ...damageEffect, loop: !!v })} />
+          <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
           <Label className="text-xs">Loop</Label>
         </div>
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
@@ -269,7 +286,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           <div className="space-y-2 flex-1">
             <div className="flex items-center gap-2">
               <Label className="text-xs w-16 shrink-0">Shape</Label>
-              <Select value={damageEffect.shape || "diamond"} onValueChange={(v) => onChange({ ...damageEffect, shape: v as any })}>
+              <Select value={shape} onValueChange={(v) => onChange({ ...effect, shape: v as any })}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="diamond">Diamond</SelectItem>
@@ -281,19 +298,15 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
             </div>
             <div className="flex items-center gap-2">
               <Label className="text-xs w-16 shrink-0">Radius</Label>
-              <Input type="number" className="h-8 w-20" value={damageEffect.radius} onChange={(e) => onChange({ ...damageEffect, radius: parseInt(e.target.value) || 0 })} min={0} />
+              <Input type="number" className="h-8 w-20" value={radius} onChange={(e) => onChange({ ...effect, radius: parseInt(e.target.value) || 0 })} min={0} />
             </div>
             <div className="flex items-center gap-2">
               <Label className="text-xs w-16 shrink-0">Min Radius</Label>
-              <Input type="number" className="h-8 w-20" value={damageEffect.minRadius ?? 0} onChange={(e) => onChange({ ...damageEffect, minRadius: parseInt(e.target.value) || 0 })} min={0} />
+              <Input type="number" className="h-8 w-20" value={minRadius} onChange={(e) => onChange({ ...effect, minRadius: parseInt(e.target.value) || 0 })} min={0} />
             </div>
           </div>
-          {damageEffect.radius > 0 && (
-            <AoePreview
-              radius={damageEffect.radius}
-              minRadius={damageEffect.minRadius ?? 0}
-              shape={damageEffect.shape || "diamond"}
-            />
+          {radius > 0 && (
+            <AoePreview radius={radius} minRadius={minRadius} shape={shape} />
           )}
         </div>
       </div>
@@ -302,30 +315,29 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
       <div className="pl-4 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">Animation Frames</span>
-          <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...damageEffect, animation: [...(damageEffect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
+          <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
             <Plus className="h-3 w-3 mr-1" /> Frame
           </Button>
         </div>
 
-        {(damageEffect.animation || []).map((frame, fi) => (
+        {(effect.animation || []).map((frame, fi) => (
           <AnimationFrameRow
             key={fi}
             frame={frame}
             onChange={(f) => {
-              const anim = [...(damageEffect.animation || [])];
+              const anim = [...(effect.animation || [])];
               anim[fi] = f;
-              onChange({ ...damageEffect, animation: anim });
+              onChange({ ...effect, animation: anim });
             }}
-            onDelete={() => onChange({ ...damageEffect, animation: (damageEffect.animation || []).filter((_, i) => i !== fi) })}
+            onDelete={() => onChange({ ...effect, animation: (effect.animation || []).filter((_, i) => i !== fi) })}
           />
         ))}
 
-        {/* Animation preview */}
-        {(damageEffect.animation || []).length > 0 && (
+        {(effect.animation || []).length > 0 && (
           <AnimationPreview
             spriteSheetSrc={spriteSheet}
-            frames={damageEffect.animation || []}
-            loop={!!damageEffect.loop}
+            frames={effect.animation || []}
+            loop={!!effect.loop}
           />
         )}
       </div>
