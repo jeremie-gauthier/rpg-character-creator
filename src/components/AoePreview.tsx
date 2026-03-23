@@ -1,10 +1,12 @@
+import type { AoeShape } from "@/types/actor";
+
 interface AoePreviewProps {
   radius: number;
   minRadius: number;
-  shape: "diamond" | "square" | "circle" | "cross";
+  shape: AoeShape;
 }
 
-function isInShape(dx: number, dy: number, radius: number, minRadius: number, shape: string): boolean {
+function isInShape(dx: number, dy: number, radius: number, minRadius: number, shape: AoeShape): boolean {
   const absDx = Math.abs(dx);
   const absDy = Math.abs(dy);
 
@@ -22,6 +24,10 @@ function isInShape(dx: number, dy: number, radius: number, minRadius: number, sh
     case "cross":
       if (dx !== 0 && dy !== 0) return false;
       distance = absDx + absDy;
+      break;
+    case "diagonal":
+      if (absDx !== absDy) return false;
+      distance = absDx;
       break;
     default:
       distance = absDx + absDy;
