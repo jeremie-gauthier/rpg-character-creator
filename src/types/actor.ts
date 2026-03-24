@@ -40,6 +40,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: AoeShape;
+      animation?: AnimationDefinition[];
+      loop?: boolean;
     };
 
 export type ConditionJson = {
