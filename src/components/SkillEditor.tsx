@@ -128,15 +128,22 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
               ))}
             </section>
 
-            {/* Constraint (single cast constraint) */}
+            {/* Constraints */}
             <section className="space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-foreground">Constraint</h4>
-                {!hasConstraint && (
-                  <Button size="sm" variant="outline" onClick={() => update({ constraints: [{ type: "cast", minRange: 0, maxRange: 1 }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Cast
-                  </Button>
-                )}
+                <h4 className="text-sm font-semibold text-foreground">Constraints</h4>
+                <div className="flex gap-1">
+                  {!skill.constraints.some(c => c.type === "cast") && (
+                    <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cast", minRange: 0, maxRange: 1 }] })}>
+                      <Plus className="h-3 w-3 mr-1" /> Cast
+                    </Button>
+                  )}
+                  {!skill.constraints.some(c => c.type === "cooldown") && (
+                    <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cooldown", turns: 1 }] })}>
+                      <Plus className="h-3 w-3 mr-1" /> Cooldown
+                    </Button>
+                  )}
+                </div>
               </div>
               {skill.constraints.map((c, ci) => (
                 <ConstraintRow key={ci} constraint={c} onChange={(v) => { const a = [...skill.constraints]; a[ci] = v; update({ constraints: a }); }} onDelete={() => update({ constraints: skill.constraints.filter((_, i) => i !== ci) })} />
