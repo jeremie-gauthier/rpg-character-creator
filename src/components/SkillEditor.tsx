@@ -214,6 +214,17 @@ function RequirementRow({ req, onChange, onDelete }: { req: SkillRequirement; on
 }
 
 function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillConstraint; onChange: (c: SkillConstraint) => void; onDelete: () => void }) {
+  if (constraint.type === "cooldown") {
+    return (
+      <div className="flex items-center gap-2 bg-muted rounded-md p-2">
+        <span className="text-xs font-medium text-muted-foreground w-16 shrink-0">cooldown</span>
+        <Label className="text-xs">Turns</Label>
+        <Input type="number" className="h-8 w-16" value={constraint.turns} onChange={(e) => onChange({ ...constraint, turns: parseInt(e.target.value) || 1 })} min={1} />
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+      </div>
+    );
+  }
+
   const shape = constraint.shape || "diamond";
   const radius = constraint.maxRange;
   const minRadius = constraint.minRange;
@@ -246,9 +257,7 @@ function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillCo
               </SelectContent>
             </Select>
           </div>
-          {radius > 0 && (
-            <AoePreview radius={radius} minRadius={minRadius} shape={shape} />
-          )}
+          <AoePreview radius={radius} minRadius={minRadius} shape={shape} />
         </div>
       </div>
     </div>
