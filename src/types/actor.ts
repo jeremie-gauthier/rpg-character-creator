@@ -58,13 +58,18 @@ export type SkillRequirement =
       expectedForm: "PURE" | "CORRUPTED";
     };
 
-export interface SkillConstraint {
-  type: "cast";
-  minRange: number;
-  maxRange: number;
-  shape?: AoeShape;
-  hasLineOfSight?: boolean;
-}
+export type SkillConstraint =
+  | {
+      type: "cast";
+      minRange: number;
+      maxRange: number;
+      shape?: AoeShape;
+      hasLineOfSight?: boolean;
+    }
+  | {
+      type: "cooldown";
+      turns: number;
+    };
 
 export interface Skill {
   id: string;
