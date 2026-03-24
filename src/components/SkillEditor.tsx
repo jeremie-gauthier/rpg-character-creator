@@ -61,7 +61,6 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
   }, [actorRace, actorJob]);
 
   const hasSanityReq = skill.requirements.some((r) => r.type === "sanity_form");
-  const hasConstraint = skill.constraints.length > 0;
 
   const sanityReq = skill.requirements.find((r) => r.type === "sanity_form") as Extract<SkillRequirement, { type: "sanity_form" }> | undefined;
   const cardBorderColor = sanityReq ? "border-l-4" : "";
@@ -128,15 +127,22 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
               ))}
             </section>
 
-            {/* Constraint (single cast constraint) */}
+            {/* Constraints */}
             <section className="space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-foreground">Constraint</h4>
-                {!hasConstraint && (
-                  <Button size="sm" variant="outline" onClick={() => update({ constraints: [{ type: "cast", minRange: 0, maxRange: 1 }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Cast
-                  </Button>
-                )}
+                <h4 className="text-sm font-semibold text-foreground">Constraints</h4>
+                <div className="flex gap-1">
+                  {!skill.constraints.some(c => c.type === "cast") && (
+                    <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cast", minRange: 0, maxRange: 1 }] })}>
+                      <Plus className="h-3 w-3 mr-1" /> Cast
+                    </Button>
+                  )}
+                  {!skill.constraints.some(c => c.type === "cooldown") && (
+                    <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cooldown", turns: 1 }] })}>
+                      <Plus className="h-3 w-3 mr-1" /> Cooldown
+                    </Button>
+                  )}
+                </div>
               </div>
               {skill.constraints.map((c, ci) => (
                 <ConstraintRow key={ci} constraint={c} onChange={(v) => { const a = [...skill.constraints]; a[ci] = v; update({ constraints: a }); }} onDelete={() => update({ constraints: skill.constraints.filter((_, i) => i !== ci) })} />
@@ -207,6 +213,17 @@ function RequirementRow({ req, onChange, onDelete }: { req: SkillRequirement; on
 }
 
 function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillConstraint; onChange: (c: SkillConstraint) => void; onDelete: () => void }) {
+  if (constraint.type === "cooldown") {
+    return (
+      <div className="flex items-center gap-2 bg-muted rounded-md p-2">
+        <span className="text-xs font-medium text-muted-foreground w-16 shrink-0">cooldown</span>
+        <Label className="text-xs">Turns</Label>
+        <Input type="number" className="h-8 w-16" value={constraint.turns} onChange={(e) => onChange({ ...constraint, turns: parseInt(e.target.value) || 1 })} min={1} />
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+      </div>
+    );
+  }
+
   const shape = constraint.shape || "diamond";
   const radius = constraint.maxRange;
   const minRadius = constraint.minRange;
@@ -239,9 +256,7 @@ function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillCo
               </SelectContent>
             </Select>
           </div>
-          {radius > 0 && (
-            <AoePreview radius={radius} minRadius={minRadius} shape={shape} />
-          )}
+          <AoePreview radius={radius} minRadius={minRadius} shape={shape} />
         </div>
       </div>
     </div>
@@ -315,6 +330,10 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           </Select>
           <Label className="text-xs">Duration</Label>
           <Input type="number" className="h-8 w-16" value={effect.condition.durationMax} onChange={(e) => onChange({ ...effect, condition: { ...effect.condition, durationMax: parseInt(e.target.value) || 1 } })} min={1} />
+          <div className="flex items-center gap-1">
+            <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
+            <Label className="text-xs">Loop</Label>
+          </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
         </div>
 
@@ -325,6 +344,37 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           shapes={AOE_SHAPES}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
+
+        {/* Animation frames */}
+        <div className="pl-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Animation Frames</span>
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
+              <Plus className="h-3 w-3 mr-1" /> Frame
+            </Button>
+          </div>
+
+          {(effect.animation || []).map((frame, fi) => (
+            <AnimationFrameRow
+              key={fi}
+              frame={frame}
+              onChange={(f) => {
+                const anim = [...(effect.animation || [])];
+                anim[fi] = f;
+                onChange({ ...effect, animation: anim });
+              }}
+              onDelete={() => onChange({ ...effect, animation: (effect.animation || []).filter((_, i) => i !== fi) })}
+            />
+          ))}
+
+          {(effect.animation || []).length > 0 && (
+            <AnimationPreview
+              spriteSheetSrc={spriteSheet}
+              frames={effect.animation || []}
+              loop={!!effect.loop}
+            />
+          )}
+        </div>
       </div>
     );
   }
