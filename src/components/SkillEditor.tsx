@@ -61,7 +61,6 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
   }, [actorRace, actorJob]);
 
   const hasSanityReq = skill.requirements.some((r) => r.type === "sanity_form");
-  const hasConstraint = skill.constraints.length > 0;
 
   const sanityReq = skill.requirements.find((r) => r.type === "sanity_form") as Extract<SkillRequirement, { type: "sanity_form" }> | undefined;
   const cardBorderColor = sanityReq ? "border-l-4" : "";
