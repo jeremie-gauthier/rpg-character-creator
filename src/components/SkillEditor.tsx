@@ -13,6 +13,7 @@ import type {
   AnimationDefinition,
   AoeShape,
   ConditionJson,
+  ReactionSkillJson,
 } from "@/types/actor";
 import { ChevronDown, Trash2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -335,13 +336,20 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
 
     return (
       <div className="bg-muted rounded-md p-2 space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">apply-condition</span>
           <Label className="text-xs">Condition</Label>
-          <Select value={effect.condition.name} onValueChange={(v) => onChange({ ...effect, condition: { ...effect.condition, name: v as ConditionJson["name"] } })}>
+          <Select value={effect.condition.name} onValueChange={(v) => {
+            if (v === "damageReduction") {
+              onChange({ ...effect, condition: { name: "damageReduction", durationMax: effect.condition.durationMax } });
+            } else {
+              onChange({ ...effect, condition: { name: "defensiveStance", durationMax: effect.condition.durationMax, reactionSkill: effect.condition.name === "defensiveStance" ? effect.condition.reactionSkill : undefined } });
+            }
+          }}>
             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="damageReduction">damageReduction</SelectItem>
+              <SelectItem value="defensiveStance">defensiveStance</SelectItem>
             </SelectContent>
           </Select>
           <Label className="text-xs">Duration</Label>
@@ -352,6 +360,15 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
         </div>
+
+        {/* Reaction Skill for defensiveStance */}
+        {effect.condition.name === "defensiveStance" && (
+          <ReactionSkillBlock
+            reactionSkill={effect.condition.reactionSkill}
+            spriteSheet={spriteSheet}
+            onChange={(rs) => onChange({ ...effect, condition: { ...effect.condition, reactionSkill: rs } })}
+          />
+        )}
 
         <AoeBlock
           radius={radius}
