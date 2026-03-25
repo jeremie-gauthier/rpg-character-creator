@@ -364,9 +364,9 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         {/* Reaction Skill for defensiveStance */}
         {effect.condition.name === "defensiveStance" && (
           <ReactionSkillBlock
-            reactionSkill={effect.condition.reactionSkill}
+            reactionSkill={(effect.condition as Extract<ConditionJson, { name: "defensiveStance" }>).reactionSkill}
             spriteSheet={spriteSheet}
-            onChange={(rs) => onChange({ ...effect, condition: { ...effect.condition, reactionSkill: rs } })}
+            onChange={(rs) => onChange({ ...effect, condition: { name: "defensiveStance", durationMax: effect.condition.durationMax, reactionSkill: rs } })}
           />
         )}
 
