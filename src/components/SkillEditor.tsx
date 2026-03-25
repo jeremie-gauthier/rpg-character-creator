@@ -142,6 +142,11 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                       <Plus className="h-3 w-3 mr-1" /> Cooldown
                     </Button>
                   )}
+                  {!skill.constraints.some(c => c.type === "usagePerTurn") && (
+                    <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "usagePerTurn", max: 1 }] })}>
+                      <Plus className="h-3 w-3 mr-1" /> Usage/Turn
+                    </Button>
+                  )}
                 </div>
               </div>
               {skill.constraints.map((c, ci) => (
@@ -216,9 +221,20 @@ function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillCo
   if (constraint.type === "cooldown") {
     return (
       <div className="flex items-center gap-2 bg-muted rounded-md p-2">
-        <span className="text-xs font-medium text-muted-foreground w-16 shrink-0">cooldown</span>
+        <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">cooldown</span>
         <Label className="text-xs">Turns</Label>
         <Input type="number" className="h-8 w-16" value={constraint.turns} onChange={(e) => onChange({ ...constraint, turns: parseInt(e.target.value) || 1 })} min={1} />
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+      </div>
+    );
+  }
+
+  if (constraint.type === "usagePerTurn") {
+    return (
+      <div className="flex items-center gap-2 bg-muted rounded-md p-2">
+        <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">usage/turn</span>
+        <Label className="text-xs">Max</Label>
+        <Input type="number" className="h-8 w-16" value={constraint.max} onChange={(e) => onChange({ ...constraint, max: parseInt(e.target.value) || 1 })} min={1} />
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
       </div>
     );
