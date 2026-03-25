@@ -486,6 +486,77 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
   );
 }
 
+function ReactionSkillBlock({ reactionSkill, spriteSheet, onChange }: {
+  reactionSkill?: ReactionSkillJson;
+  spriteSheet: string;
+  onChange: (rs: ReactionSkillJson) => void;
+}) {
+  const rs: ReactionSkillJson = reactionSkill || { id: "", name: "", reactsTo: "enemies", sideEffects: [] };
+  const update = (patch: Partial<ReactionSkillJson>) => onChange({ ...rs, ...patch });
+
+  return (
+    <div className="bg-background rounded p-3 space-y-2 border border-border">
+      <span className="text-xs font-semibold text-foreground">Reaction Skill</span>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <Label className="text-xs">ID</Label>
+          <Input className="h-8 text-xs" value={rs.id} onChange={(e) => update({ id: e.target.value })} placeholder="reaction-id" />
+        </div>
+        <div>
+          <Label className="text-xs">Name</Label>
+          <Input className="h-8 text-xs" value={rs.name} onChange={(e) => update({ name: e.target.value })} placeholder="Reaction Name" />
+        </div>
+        <div>
+          <Label className="text-xs">Reacts To</Label>
+          <Select value={rs.reactsTo} onValueChange={(v) => update({ reactsTo: v as ReactionSkillJson["reactsTo"] })}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="enemies">enemies</SelectItem>
+              <SelectItem value="allies">allies</SelectItem>
+              <SelectItem value="all">all</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Reaction constraints */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Constraints</span>
+          <div className="flex gap-1">
+            {!(rs.constraints || []).some(c => c.type === "cast") && (
+              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ constraints: [...(rs.constraints || []), { type: "cast", minRange: 0, maxRange: 1 }] })}>
+                <Plus className="h-3 w-3 mr-1" /> Cast
+              </Button>
+            )}
+          </div>
+        </div>
+        {(rs.constraints || []).map((c, ci) => (
+          <ConstraintRow key={ci} constraint={c} onChange={(v) => { const a = [...(rs.constraints || [])]; a[ci] = v; update({ constraints: a }); }} onDelete={() => update({ constraints: (rs.constraints || []).filter((_, i) => i !== ci) })} />
+        ))}
+      </div>
+
+      {/* Reaction side effects */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Side Effects</span>
+          <div className="flex gap-1">
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" }] })}>
+              <Plus className="h-3 w-3 mr-1" /> Damage
+            </Button>
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "heal-target", healMin: 0, healMax: 1 }] })}>
+              <Plus className="h-3 w-3 mr-1" /> Heal
+            </Button>
+          </div>
+        </div>
+        {rs.sideEffects.map((se, si) => (
+          <SideEffectRow key={si} effect={se} spriteSheet={spriteSheet} onChange={(v) => { const a = [...rs.sideEffects]; a[si] = v; update({ sideEffects: a }); }} onDelete={() => update({ sideEffects: rs.sideEffects.filter((_, i) => i !== si) })} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AnimationFrameRow({ frame, onChange, onDelete }: { frame: AnimationDefinition; onChange: (f: AnimationDefinition) => void; onDelete: () => void }) {
   return (
     <div className="bg-background rounded p-2 space-y-1">
