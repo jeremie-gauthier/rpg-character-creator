@@ -13,6 +13,7 @@ import type {
   AnimationDefinition,
   AoeShape,
   ConditionJson,
+  ReactionSkillJson,
 } from "@/types/actor";
 import { ChevronDown, Trash2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -142,6 +143,11 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                       <Plus className="h-3 w-3 mr-1" /> Cooldown
                     </Button>
                   )}
+                  {!skill.constraints.some(c => c.type === "usagePerTurn") && (
+                    <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "usagePerTurn", max: 1 }] })}>
+                      <Plus className="h-3 w-3 mr-1" /> Usage/Turn
+                    </Button>
+                  )}
                 </div>
               </div>
               {skill.constraints.map((c, ci) => (
@@ -216,9 +222,20 @@ function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillCo
   if (constraint.type === "cooldown") {
     return (
       <div className="flex items-center gap-2 bg-muted rounded-md p-2">
-        <span className="text-xs font-medium text-muted-foreground w-16 shrink-0">cooldown</span>
+        <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">cooldown</span>
         <Label className="text-xs">Turns</Label>
         <Input type="number" className="h-8 w-16" value={constraint.turns} onChange={(e) => onChange({ ...constraint, turns: parseInt(e.target.value) || 1 })} min={1} />
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+      </div>
+    );
+  }
+
+  if (constraint.type === "usagePerTurn") {
+    return (
+      <div className="flex items-center gap-2 bg-muted rounded-md p-2">
+        <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">usage/turn</span>
+        <Label className="text-xs">Max</Label>
+        <Input type="number" className="h-8 w-16" value={constraint.max} onChange={(e) => onChange({ ...constraint, max: parseInt(e.target.value) || 1 })} min={1} />
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
       </div>
     );
@@ -319,13 +336,20 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
 
     return (
       <div className="bg-muted rounded-md p-2 space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">apply-condition</span>
           <Label className="text-xs">Condition</Label>
-          <Select value={effect.condition.name} onValueChange={(v) => onChange({ ...effect, condition: { ...effect.condition, name: v as ConditionJson["name"] } })}>
+          <Select value={effect.condition.name} onValueChange={(v) => {
+            if (v === "damageReduction") {
+              onChange({ ...effect, condition: { name: "damageReduction", durationMax: effect.condition.durationMax } });
+            } else {
+              onChange({ ...effect, condition: { name: "defensiveStance", durationMax: effect.condition.durationMax, reactionSkill: effect.condition.name === "defensiveStance" ? effect.condition.reactionSkill : undefined } });
+            }
+          }}>
             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="damageReduction">damageReduction</SelectItem>
+              <SelectItem value="defensiveStance">defensiveStance</SelectItem>
             </SelectContent>
           </Select>
           <Label className="text-xs">Duration</Label>
@@ -336,6 +360,15 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
         </div>
+
+        {/* Reaction Skill for defensiveStance */}
+        {effect.condition.name === "defensiveStance" && (
+          <ReactionSkillBlock
+            reactionSkill={(effect.condition as Extract<ConditionJson, { name: "defensiveStance" }>).reactionSkill}
+            spriteSheet={spriteSheet}
+            onChange={(rs) => onChange({ ...effect, condition: { name: "defensiveStance", durationMax: effect.condition.durationMax, reactionSkill: rs } })}
+          />
+        )}
 
         <AoeBlock
           radius={radius}
@@ -448,6 +481,77 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
             loop={!!effect.loop}
           />
         )}
+      </div>
+    </div>
+  );
+}
+
+function ReactionSkillBlock({ reactionSkill, spriteSheet, onChange }: {
+  reactionSkill?: ReactionSkillJson;
+  spriteSheet: string;
+  onChange: (rs: ReactionSkillJson) => void;
+}) {
+  const rs: ReactionSkillJson = reactionSkill || { id: "", name: "", reactsTo: "enemies", sideEffects: [] };
+  const update = (patch: Partial<ReactionSkillJson>) => onChange({ ...rs, ...patch });
+
+  return (
+    <div className="bg-background rounded p-3 space-y-2 border border-border">
+      <span className="text-xs font-semibold text-foreground">Reaction Skill</span>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <Label className="text-xs">ID</Label>
+          <Input className="h-8 text-xs" value={rs.id} onChange={(e) => update({ id: e.target.value })} placeholder="reaction-id" />
+        </div>
+        <div>
+          <Label className="text-xs">Name</Label>
+          <Input className="h-8 text-xs" value={rs.name} onChange={(e) => update({ name: e.target.value })} placeholder="Reaction Name" />
+        </div>
+        <div>
+          <Label className="text-xs">Reacts To</Label>
+          <Select value={rs.reactsTo} onValueChange={(v) => update({ reactsTo: v as ReactionSkillJson["reactsTo"] })}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="enemies">enemies</SelectItem>
+              <SelectItem value="allies">allies</SelectItem>
+              <SelectItem value="all">all</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Reaction constraints */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Constraints</span>
+          <div className="flex gap-1">
+            {!(rs.constraints || []).some(c => c.type === "cast") && (
+              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ constraints: [...(rs.constraints || []), { type: "cast", minRange: 0, maxRange: 1 }] })}>
+                <Plus className="h-3 w-3 mr-1" /> Cast
+              </Button>
+            )}
+          </div>
+        </div>
+        {(rs.constraints || []).map((c, ci) => (
+          <ConstraintRow key={ci} constraint={c} onChange={(v) => { const a = [...(rs.constraints || [])]; a[ci] = v; update({ constraints: a }); }} onDelete={() => update({ constraints: (rs.constraints || []).filter((_, i) => i !== ci) })} />
+        ))}
+      </div>
+
+      {/* Reaction side effects */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Side Effects</span>
+          <div className="flex gap-1">
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" }] })}>
+              <Plus className="h-3 w-3 mr-1" /> Damage
+            </Button>
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "heal-target", healMin: 0, healMax: 1 }] })}>
+              <Plus className="h-3 w-3 mr-1" /> Heal
+            </Button>
+          </div>
+        </div>
+        {rs.sideEffects.map((se, si) => (
+          <SideEffectRow key={si} effect={se} spriteSheet={spriteSheet} onChange={(v) => { const a = [...rs.sideEffects]; a[si] = v; update({ sideEffects: a }); }} onDelete={() => update({ sideEffects: rs.sideEffects.filter((_, i) => i !== si) })} />
+        ))}
       </div>
     </div>
   );
