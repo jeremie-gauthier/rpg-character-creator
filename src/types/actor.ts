@@ -44,10 +44,24 @@ export type SideEffect =
       loop?: boolean;
     };
 
-export type ConditionJson = {
-  name: "damageReduction";
-  durationMax: number;
-};
+export type ConditionJson =
+  | {
+      name: "damageReduction";
+      durationMax: number;
+    }
+  | {
+      name: "defensiveStance";
+      durationMax: number;
+      reactionSkill?: ReactionSkillJson;
+    };
+
+export interface ReactionSkillJson {
+  id: string;
+  name: string;
+  reactsTo: "enemies" | "allies" | "all";
+  constraints?: SkillConstraint[];
+  sideEffects: SideEffect[];
+}
 
 export type SkillRequirement =
   | {
@@ -71,6 +85,10 @@ export type SkillConstraint =
   | {
       type: "cooldown";
       turns: number;
+    }
+  | {
+      type: "usagePerTurn";
+      max: number;
     };
 
 export interface Skill {
