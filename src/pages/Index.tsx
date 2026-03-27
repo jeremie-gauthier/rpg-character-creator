@@ -6,14 +6,53 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkillEditor } from "@/components/SkillEditor";
 import { SpriteSheetViewer } from "@/components/SpriteSheetViewer";
 import { createDefaultActor, createDefaultSkill, type Actor } from "@/types/actor";
-import { Download, Upload, Plus, ImagePlus } from "lucide-react";
+import { Download, Upload, Plus, ImagePlus, GripVertical } from "lucide-react";
 import { toast } from "sonner";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+let nextSkillUid = 1;
+const genUid = () => `skill-${nextSkillUid++}`;
+
+function SortableSkillItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="relative group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute left-0 top-3 -ml-7 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
+      >
+        <GripVertical className="h-5 w-5 text-muted-foreground" />
+      </div>
+      {children}
+    </div>
+  );
+}
 
 const Index = () => {
   const [actor, setActor] = useState<Actor>(createDefaultActor());
+  const [skillIds, setSkillIds] = useState<string[]>([genUid()]);
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
   const spriteUploadRef = useRef<HTMLInputElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = skillIds.indexOf(active.id as string);
+      const newIndex = skillIds.indexOf(over.id as string);
+      setSkillIds(arrayMove(skillIds, oldIndex, newIndex));
+      setActor((a) => ({ ...a, skills: arrayMove(a.skills, oldIndex, newIndex) }));
+    }
+  };
 
   const updateActor = (partial: Partial<Actor>) => setActor((a) => ({ ...a, ...partial }));
 
@@ -92,6 +131,7 @@ const Index = () => {
       try {
         const data = JSON.parse(ev.target?.result as string) as Actor;
         setActor(data);
+        setSkillIds(data.skills.map(() => genUid()));
         setSkillsCollapsed(true);
         toast.success("Actor loaded!");
       } catch {
@@ -164,30 +204,42 @@ const Index = () => {
           </CardContent>
         </Card>
 
-        <div className="space-y-3">
-          <h2 className="text-base font-bold text-foreground">Skills</h2>
+        <div className="space-y-3 pl-7">
+          <h2 className="text-base font-bold text-foreground -ml-7">Skills</h2>
           {actor.skills.length === 0 && (
             <p className="text-sm text-muted-foreground py-8 text-center">No skills yet. Add one to get started.</p>
           )}
-          {actor.skills.map((skill, i) => (
-            <SkillEditor
-              key={i}
-              skill={skill}
-              actorRace={actor.race}
-              actorJob={actor.job}
-              spriteSheet={resolveImage(actor.spriteSheet)}
-              resolveImage={resolveImage}
-              onUploadImage={uploadImage}
-              defaultOpen={!skillsCollapsed}
-              onChange={(s) => {
-                const skills = [...actor.skills];
-                skills[i] = s;
-                updateActor({ skills });
-              }}
-              onDelete={() => updateActor({ skills: actor.skills.filter((_, si) => si !== i) })}
-            />
-          ))}
-          <Button size="sm" className="w-full" onClick={() => { setSkillsCollapsed(false); updateActor({ skills: [...actor.skills, createDefaultSkill()] }); }}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={skillIds} strategy={verticalListSortingStrategy}>
+              {actor.skills.map((skill, i) => (
+                <SortableSkillItem key={skillIds[i]} id={skillIds[i]}>
+                  <SkillEditor
+                    skill={skill}
+                    actorRace={actor.race}
+                    actorJob={actor.job}
+                    spriteSheet={resolveImage(actor.spriteSheet)}
+                    resolveImage={resolveImage}
+                    onUploadImage={uploadImage}
+                    defaultOpen={!skillsCollapsed}
+                    onChange={(s) => {
+                      const skills = [...actor.skills];
+                      skills[i] = s;
+                      updateActor({ skills });
+                    }}
+                    onDelete={() => {
+                      updateActor({ skills: actor.skills.filter((_, si) => si !== i) });
+                      setSkillIds((ids) => ids.filter((_, si) => si !== i));
+                    }}
+                  />
+                </SortableSkillItem>
+              ))}
+            </SortableContext>
+          </DndContext>
+          <Button size="sm" className="w-full -ml-7 max-w-[calc(100%+1.75rem)]" onClick={() => {
+            setSkillsCollapsed(false);
+            setSkillIds((ids) => [...ids, genUid()]);
+            updateActor({ skills: [...actor.skills, createDefaultSkill()] });
+          }}>
             <Plus className="h-4 w-4 mr-1" /> Add Skill
           </Button>
         </div>
