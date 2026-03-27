@@ -12,11 +12,47 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+let nextSkillUid = 1;
+const genUid = () => `skill-${nextSkillUid++}`;
+
+function SortableSkillItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="relative group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute left-0 top-3 -ml-7 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
+      >
+        <GripVertical className="h-5 w-5 text-muted-foreground" />
+      </div>
+      {children}
+    </div>
+  );
+}
+
 const Index = () => {
   const [actor, setActor] = useState<Actor>(createDefaultActor());
+  const [skillIds, setSkillIds] = useState<string[]>([genUid()]);
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
   const spriteUploadRef = useRef<HTMLInputElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = skillIds.indexOf(active.id as string);
+      const newIndex = skillIds.indexOf(over.id as string);
+      setSkillIds(arrayMove(skillIds, oldIndex, newIndex));
+      setActor((a) => ({ ...a, skills: arrayMove(a.skills, oldIndex, newIndex) }));
+    }
+  };
 
   const updateActor = (partial: Partial<Actor>) => setActor((a) => ({ ...a, ...partial }));
 
