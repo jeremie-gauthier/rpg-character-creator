@@ -169,6 +169,9 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-condition", condition: { name: "damageReduction", durationMax: 1 } }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Condition
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "corrupt-target", corruptionMin: 0, corruptionMax: 1 }] })}>
+                    <Plus className="h-3 w-3 mr-1" /> Corrupt
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "charge-target" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Charge
                   </Button>
@@ -408,6 +411,32 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
             />
           )}
         </div>
+      </div>
+    );
+  }
+
+  // corrupt-target (no animation/loop)
+  if (effect.type === "corrupt-target") {
+    const radius = effect.radius ?? 0;
+    const minRadius = effect.minRadius ?? 0;
+    const shape = effect.shape || "diamond";
+    return (
+      <div className="bg-muted rounded-md p-2 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">corrupt-target</span>
+          <Label className="text-xs">Min</Label>
+          <Input type="number" className="h-8 w-16" value={effect.corruptionMin} onChange={(e) => onChange({ ...effect, corruptionMin: parseInt(e.target.value) || 0 })} />
+          <Label className="text-xs">Max</Label>
+          <Input type="number" className="h-8 w-16" value={effect.corruptionMax} onChange={(e) => onChange({ ...effect, corruptionMax: parseInt(e.target.value) || 0 })} />
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        </div>
+        <AoeBlock
+          radius={radius}
+          minRadius={minRadius}
+          shape={shape}
+          shapes={AOE_SHAPES_NO_DIAGONAL}
+          onChange={(patch) => onChange({ ...effect, ...patch })}
+        />
       </div>
     );
   }

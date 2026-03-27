@@ -35,6 +35,14 @@ export type SideEffect =
   | { type: "charge-target" }
   | { type: "pull-target" }
   | {
+      type: "corrupt-target";
+      corruptionMin: number;
+      corruptionMax: number;
+      radius?: number;
+      minRadius?: number;
+      shape?: AoeShape;
+    }
+  | {
       type: "apply-condition";
       condition: ConditionJson;
       radius?: number;
