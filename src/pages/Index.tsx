@@ -131,6 +131,7 @@ const Index = () => {
       try {
         const data = JSON.parse(ev.target?.result as string) as Actor;
         setActor(data);
+        setSkillIds(data.skills.map(() => genUid()));
         setSkillsCollapsed(true);
         toast.success("Actor loaded!");
       } catch {
