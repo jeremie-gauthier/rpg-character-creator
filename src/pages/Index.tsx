@@ -204,30 +204,42 @@ const Index = () => {
           </CardContent>
         </Card>
 
-        <div className="space-y-3">
-          <h2 className="text-base font-bold text-foreground">Skills</h2>
+        <div className="space-y-3 pl-7">
+          <h2 className="text-base font-bold text-foreground -ml-7">Skills</h2>
           {actor.skills.length === 0 && (
             <p className="text-sm text-muted-foreground py-8 text-center">No skills yet. Add one to get started.</p>
           )}
-          {actor.skills.map((skill, i) => (
-            <SkillEditor
-              key={i}
-              skill={skill}
-              actorRace={actor.race}
-              actorJob={actor.job}
-              spriteSheet={resolveImage(actor.spriteSheet)}
-              resolveImage={resolveImage}
-              onUploadImage={uploadImage}
-              defaultOpen={!skillsCollapsed}
-              onChange={(s) => {
-                const skills = [...actor.skills];
-                skills[i] = s;
-                updateActor({ skills });
-              }}
-              onDelete={() => updateActor({ skills: actor.skills.filter((_, si) => si !== i) })}
-            />
-          ))}
-          <Button size="sm" className="w-full" onClick={() => { setSkillsCollapsed(false); updateActor({ skills: [...actor.skills, createDefaultSkill()] }); }}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={skillIds} strategy={verticalListSortingStrategy}>
+              {actor.skills.map((skill, i) => (
+                <SortableSkillItem key={skillIds[i]} id={skillIds[i]}>
+                  <SkillEditor
+                    skill={skill}
+                    actorRace={actor.race}
+                    actorJob={actor.job}
+                    spriteSheet={resolveImage(actor.spriteSheet)}
+                    resolveImage={resolveImage}
+                    onUploadImage={uploadImage}
+                    defaultOpen={!skillsCollapsed}
+                    onChange={(s) => {
+                      const skills = [...actor.skills];
+                      skills[i] = s;
+                      updateActor({ skills });
+                    }}
+                    onDelete={() => {
+                      updateActor({ skills: actor.skills.filter((_, si) => si !== i) });
+                      setSkillIds((ids) => ids.filter((_, si) => si !== i));
+                    }}
+                  />
+                </SortableSkillItem>
+              ))}
+            </SortableContext>
+          </DndContext>
+          <Button size="sm" className="w-full -ml-7 max-w-[calc(100%+1.75rem)]" onClick={() => {
+            setSkillsCollapsed(false);
+            setSkillIds((ids) => [...ids, genUid()]);
+            updateActor({ skills: [...actor.skills, createDefaultSkill()] });
+          }}>
             <Plus className="h-4 w-4 mr-1" /> Add Skill
           </Button>
         </div>
