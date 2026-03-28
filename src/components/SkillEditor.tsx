@@ -178,6 +178,9 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "pull-target" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Pull
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "push-target", pushForce: 1 }] })}>
+                    <Plus className="h-3 w-3 mr-1" /> Push
+                  </Button>
                 </div>
               </div>
               {skill.sideEffects.map((se, si) => (
@@ -332,6 +335,17 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
     );
   }
 
+  if (effect.type === "push-target") {
+    return (
+      <div className="flex items-center gap-2 bg-muted rounded-md p-2">
+        <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">push-target</span>
+        <Label className="text-xs">Force</Label>
+        <Input type="number" className="h-8 w-16" value={effect.pushForce} onChange={(e) => onChange({ ...effect, pushForce: parseInt(e.target.value) || 1 })} min={1} />
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+      </div>
+    );
+  }
+
   if (effect.type === "apply-condition") {
     const radius = effect.radius ?? 0;
     const minRadius = effect.minRadius ?? 0;
@@ -343,16 +357,25 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">apply-condition</span>
           <Label className="text-xs">Condition</Label>
           <Select value={effect.condition.name} onValueChange={(v) => {
+            const dur = effect.condition.durationMax;
             if (v === "damageReduction") {
-              onChange({ ...effect, condition: { name: "damageReduction", durationMax: effect.condition.durationMax } });
+              onChange({ ...effect, condition: { name: "damageReduction", durationMax: dur } });
+            } else if (v === "damageAugmentation") {
+              onChange({ ...effect, condition: { name: "damageAugmentation", durationMax: dur } });
+            } else if (v === "defensiveStance") {
+              const prev = effect.condition.name === "defensiveStance" || effect.condition.name === "offensiveStance" ? effect.condition.reactionSkill : undefined;
+              onChange({ ...effect, condition: { name: "defensiveStance", durationMax: dur, reactionSkill: prev } });
             } else {
-              onChange({ ...effect, condition: { name: "defensiveStance", durationMax: effect.condition.durationMax, reactionSkill: effect.condition.name === "defensiveStance" ? effect.condition.reactionSkill : undefined } });
+              const prev = effect.condition.name === "defensiveStance" || effect.condition.name === "offensiveStance" ? effect.condition.reactionSkill : undefined;
+              onChange({ ...effect, condition: { name: "offensiveStance", durationMax: dur, reactionSkill: prev } });
             }
           }}>
             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="damageReduction">damageReduction</SelectItem>
+              <SelectItem value="damageAugmentation">damageAugmentation</SelectItem>
               <SelectItem value="defensiveStance">defensiveStance</SelectItem>
+              <SelectItem value="offensiveStance">offensiveStance</SelectItem>
             </SelectContent>
           </Select>
           <Label className="text-xs">Duration</Label>
@@ -364,12 +387,12 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
         </div>
 
-        {/* Reaction Skill for defensiveStance */}
-        {effect.condition.name === "defensiveStance" && (
+        {/* Reaction Skill for defensiveStance / offensiveStance */}
+        {(effect.condition.name === "defensiveStance" || effect.condition.name === "offensiveStance") && (
           <ReactionSkillBlock
-            reactionSkill={(effect.condition as Extract<ConditionJson, { name: "defensiveStance" }>).reactionSkill}
+            reactionSkill={(effect.condition as Extract<ConditionJson, { name: "defensiveStance" | "offensiveStance" }>).reactionSkill}
             spriteSheet={spriteSheet}
-            onChange={(rs) => onChange({ ...effect, condition: { name: "defensiveStance", durationMax: effect.condition.durationMax, reactionSkill: rs } })}
+            onChange={(rs) => onChange({ ...effect, condition: { ...effect.condition, reactionSkill: rs } as ConditionJson })}
           />
         )}
 

@@ -35,6 +35,10 @@ export type SideEffect =
   | { type: "charge-target" }
   | { type: "pull-target" }
   | {
+      type: "push-target";
+      pushForce: number;
+    }
+  | {
       type: "corrupt-target";
       corruptionMin: number;
       corruptionMax: number;
@@ -58,7 +62,16 @@ export type ConditionJson =
       durationMax: number;
     }
   | {
+      name: "damageAugmentation";
+      durationMax: number;
+    }
+  | {
       name: "defensiveStance";
+      durationMax: number;
+      reactionSkill?: ReactionSkillJson;
+    }
+  | {
+      name: "offensiveStance";
       durationMax: number;
       reactionSkill?: ReactionSkillJson;
     };
