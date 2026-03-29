@@ -14,6 +14,7 @@ import type {
   AoeShape,
   ConditionJson,
   ReactionSkillJson,
+  FrameEvent,
 } from "@/types/actor";
 import { ChevronDown, Trash2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -200,7 +201,7 @@ function RequirementRow({ req, onChange, onDelete }: { req: SkillRequirement; on
       <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">{req.type === "resource_cost" ? "Resource" : "Sanity"}</span>
       {req.type === "resource_cost" ? (
         <>
-          <Select value={req.resource} onValueChange={(v) => onChange({ ...req, resource: v as any })}>
+          <Select value={req.resource} onValueChange={(v) => onChange({ ...req, resource: v as SkillRequirement & { type: "resource_cost" }["resource"] })}>
             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ACTION_POINTS">AP</SelectItem>
@@ -211,7 +212,7 @@ function RequirementRow({ req, onChange, onDelete }: { req: SkillRequirement; on
           <Input type="number" className="h-8 w-20" value={req.amount} onChange={(e) => onChange({ ...req, amount: parseInt(e.target.value) || 0 })} />
         </>
       ) : (
-        <Select value={req.expectedForm} onValueChange={(v) => onChange({ ...req, expectedForm: v as any })}>
+        <Select value={req.expectedForm} onValueChange={(v) => onChange({ ...req, expectedForm: v as SkillRequirement & { type: "sanity_form" }["expectedForm"] })}>
           <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="PURE">PURE</SelectItem>
@@ -358,16 +359,22 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           <Label className="text-xs">Condition</Label>
           <Select value={effect.condition.name} onValueChange={(v) => {
             const dur = effect.condition.durationMax;
+            const defaultRS: ReactionSkillJson = { id: "", name: "", reactsTo: "enemies", sideEffects: [] };
+            
             if (v === "damageReduction") {
               onChange({ ...effect, condition: { name: "damageReduction", durationMax: dur } });
             } else if (v === "damageAugmentation") {
               onChange({ ...effect, condition: { name: "damageAugmentation", durationMax: dur } });
             } else if (v === "defensiveStance") {
-              const prev = effect.condition.name === "defensiveStance" || effect.condition.name === "offensiveStance" ? effect.condition.reactionSkill : undefined;
+              const prev = (effect.condition.name === "defensiveStance" || effect.condition.name === "offensiveStance") ? effect.condition.reactionSkill : defaultRS;
               onChange({ ...effect, condition: { name: "defensiveStance", durationMax: dur, reactionSkill: prev } });
-            } else {
-              const prev = effect.condition.name === "defensiveStance" || effect.condition.name === "offensiveStance" ? effect.condition.reactionSkill : undefined;
+            } else if (v === "offensiveStance") {
+              const prev = (effect.condition.name === "defensiveStance" || effect.condition.name === "offensiveStance") ? effect.condition.reactionSkill : defaultRS;
               onChange({ ...effect, condition: { name: "offensiveStance", durationMax: dur, reactionSkill: prev } });
+            } else if (v === "bleeding") {
+              onChange({ ...effect, condition: { name: "bleeding", durationMax: dur } });
+            } else if (v === "burning") {
+              onChange({ ...effect, condition: { name: "burning", durationMax: dur } });
             }
           }}>
             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -376,6 +383,8 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
               <SelectItem value="damageAugmentation">damageAugmentation</SelectItem>
               <SelectItem value="defensiveStance">defensiveStance</SelectItem>
               <SelectItem value="offensiveStance">offensiveStance</SelectItem>
+              <SelectItem value="bleeding">bleeding</SelectItem>
+              <SelectItem value="burning">burning</SelectItem>
             </SelectContent>
           </Select>
           <Label className="text-xs">Duration</Label>
@@ -627,7 +636,7 @@ function AnimationFrameRow({ frame, onChange, onDelete }: { frame: AnimationDefi
           <span className="text-xs text-muted-foreground">Audio:</span>
           <Select value={ev.audioId} onValueChange={(v) => {
             const events = [...(frame.frameEvents || [])];
-            events[ei] = { ...ev, audioId: v as any };
+            events[ei] = { ...ev, audioId: v as FrameEvent["audioId"] };
             onChange({ ...frame, frameEvents: events });
           }}>
             <SelectTrigger className="h-7 text-xs w-32"><SelectValue /></SelectTrigger>

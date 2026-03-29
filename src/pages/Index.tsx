@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkillEditor } from "@/components/SkillEditor";
 import { SpriteSheetViewer } from "@/components/SpriteSheetViewer";
-import { createDefaultActor, createDefaultSkill, type Actor } from "@/types/actor";
+import { createDefaultActor, createDefaultSkill, type Actor, type SkillConstraint, type SideEffect, type AnimationDefinition } from "@/types/actor";
 import { Download, Upload, Plus, ImagePlus, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
@@ -86,28 +86,65 @@ const Index = () => {
       toast.error("Health Points Max must be at least 1.");
       return;
     }
+
+    const cleanConstraint = (c: SkillConstraint) => {
+      const cleaned = { ...c } as Record<string, unknown>;
+      if (c.type === "cast") {
+        if (c.shape === "diamond") delete cleaned.shape;
+        if (c.hasLineOfSight === false) delete cleaned.hasLineOfSight;
+      }
+      return cleaned;
+    };
+
+    const cleanSideEffect = (se: SideEffect): Record<string, unknown> => {
+      const cleaned = { ...se } as Record<string, unknown>;
+      
+      // Clean up animation frames
+      if ("animation" in se && se.animation) {
+        if (se.animation.length === 0) {
+          delete cleaned.animation;
+        } else {
+          cleaned.animation = se.animation.map((a: AnimationDefinition) => {
+            if (a.frameEvents && a.frameEvents.length === 0) {
+              const { frameEvents, ...aRest } = a;
+              return aRest;
+            }
+            return a;
+          });
+        }
+      }
+      
+      // Clean up loop
+      if ("loop" in se && (se.loop === false || se.loop === undefined)) {
+        delete cleaned.loop;
+      }
+      
+      // Clean up AoE fields if they are 0/default
+      if ("radius" in se && se.radius === 0) delete cleaned.radius;
+      if ("minRadius" in se && se.minRadius === 0) delete cleaned.minRadius;
+      if ("shape" in se && se.shape === "diamond") delete cleaned.shape;
+
+      // Recursively clean reactionSkill if present in condition
+      if (se.type === "apply-condition" && se.condition && (se.condition.name === "defensiveStance" || se.condition.name === "offensiveStance") && se.condition.reactionSkill) {
+        cleaned.condition = {
+          ...se.condition,
+          reactionSkill: {
+            ...se.condition.reactionSkill,
+            constraints: se.condition.reactionSkill.constraints?.map(cleanConstraint),
+            sideEffects: se.condition.reactionSkill.sideEffects?.map(cleanSideEffect)
+          }
+        };
+      }
+
+      return cleaned;
+    };
+
     const clean = {
       ...actor,
       skills: actor.skills.map((s) => ({
         ...s,
-        sideEffects: s.sideEffects.map((se) => {
-          if (se.type === "damage-target") {
-            const { animation, ...rest } = se;
-            const cleaned: any = rest;
-            if (animation && animation.length > 0) {
-              cleaned.animation = animation.map((a) => {
-                if (a.frameEvents && a.frameEvents.length === 0) {
-                  const { frameEvents, ...aRest } = a;
-                  return aRest;
-                }
-                return a;
-              });
-            }
-            if (se.loop === false || se.loop === undefined) delete cleaned.loop;
-            return cleaned;
-          }
-          return se;
-        }),
+        constraints: s.constraints.map(cleanConstraint),
+        sideEffects: s.sideEffects.map(cleanSideEffect),
       })),
     };
 

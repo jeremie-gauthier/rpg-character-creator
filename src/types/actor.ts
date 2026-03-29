@@ -68,12 +68,20 @@ export type ConditionJson =
   | {
       name: "defensiveStance";
       durationMax: number;
-      reactionSkill?: ReactionSkillJson;
+      reactionSkill: ReactionSkillJson;
     }
   | {
       name: "offensiveStance";
       durationMax: number;
-      reactionSkill?: ReactionSkillJson;
+      reactionSkill: ReactionSkillJson;
+    }
+  | {
+      name: "bleeding";
+      durationMax: number;
+    }
+  | {
+      name: "burning";
+      durationMax: number;
     };
 
 export interface ReactionSkillJson {
