@@ -1,4 +1,6 @@
-# RPG Character Creator
+# [RPG Character Creator](https://jeremie-gauthier.github.io/rpg-character-creator/)
+
+[![gh-pages CD](https://github.com/jeremie-gauthier/rpg-character-creator/actions/workflows/deploy.yml/badge.svg)](https://github.com/jeremie-gauthier/rpg-character-creator/actions)
 
 A specialized utility for designing and configuring character definitions for a personal RPG project.
 
