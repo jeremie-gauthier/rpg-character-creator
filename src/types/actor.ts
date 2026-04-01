@@ -1,6 +1,13 @@
 export interface FrameEvent {
   type: "play_audio";
-  audioId: "footstep" | "door" | "chest" | "chest_close" | "ui_click" | "sword_attack" | "hurt";
+  audioId:
+    | "footstep"
+    | "door"
+    | "chest"
+    | "chest_close"
+    | "ui_click"
+    | "sword_attack"
+    | "hurt";
 }
 
 export interface AnimationDefinition {
@@ -9,26 +16,30 @@ export interface AnimationDefinition {
   frameEvents?: FrameEvent[];
 }
 
+export type Subject = "caster" | "target";
+
 export type AoeShape = "diamond" | "square" | "circle" | "cross" | "diagonal";
 
 export type SideEffect =
   | {
-      type: "damage-target";
+      type: "apply-damage";
+      subject: Subject;
       damageMin: number;
       damageMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: AoeShape;
+      shape?: "diamond" | "square" | "circle" | "cross";
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
   | {
-      type: "heal-target";
+      type: "apply-heal";
+      subject: Subject;
       healMin: number;
       healMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: AoeShape;
+      shape?: "diamond" | "square" | "circle" | "cross";
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
@@ -39,19 +50,34 @@ export type SideEffect =
       pushForce: number;
     }
   | {
-      type: "corrupt-target";
+      type: "apply-corruption";
+      subject: Subject;
       corruptionMin: number;
       corruptionMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: AoeShape;
+      shape?: "diamond" | "square" | "circle" | "cross";
+      animation?: AnimationDefinition[];
+      loop?: boolean;
+    }
+  | {
+      type: "apply-heal-corruption";
+      subject: Subject;
+      healMin: number;
+      healMax: number;
+      radius?: number;
+      minRadius?: number;
+      shape?: "diamond" | "square" | "circle" | "cross" | "diagonal";
+      animation?: AnimationDefinition[];
+      loop?: boolean;
     }
   | {
       type: "apply-condition";
+      subject: Subject;
       condition: ConditionJson;
       radius?: number;
       minRadius?: number;
-      shape?: AoeShape;
+      shape?: "diamond" | "square" | "circle" | "cross" | "diagonal";
       animation?: AnimationDefinition[];
       loop?: boolean;
     };
@@ -68,12 +94,12 @@ export type ConditionJson =
   | {
       name: "defensiveStance";
       durationMax: number;
-      reactionSkill: ReactionSkillJson;
+      reactionSkill?: ReactionSkillJson;
     }
   | {
       name: "offensiveStance";
       durationMax: number;
-      reactionSkill: ReactionSkillJson;
+      reactionSkill?: ReactionSkillJson;
     }
   | {
       name: "bleeding";
@@ -87,7 +113,7 @@ export type ConditionJson =
 export interface ReactionSkillJson {
   id: string;
   name: string;
-  reactsTo: "enemies" | "allies" | "all";
+  reactsTo: "allies" | "enemies" | "all";
   constraints?: SkillConstraint[];
   sideEffects: SideEffect[];
 }

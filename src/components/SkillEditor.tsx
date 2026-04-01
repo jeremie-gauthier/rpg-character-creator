@@ -160,18 +160,21 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
             <section className="space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-foreground">Side Effects</h4>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" }] })}>
+                <div className="flex gap-1 flex-wrap">
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-damage", subject: "target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Damage
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "heal-target", healMin: 0, healMax: 1 }] })}>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-heal", subject: "target", healMin: 0, healMax: 1 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Heal
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-condition", condition: { name: "damageReduction", durationMax: 1 } }] })}>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-condition", subject: "target", condition: { name: "damageReduction", durationMax: 1 } }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Condition
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "corrupt-target", corruptionMin: 0, corruptionMax: 1 }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Corrupt
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-corruption", subject: "target", corruptionMin: 0, corruptionMax: 1 }] })}>
+                    <Plus className="h-3 w-3 mr-1" /> Corruption
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-heal-corruption", subject: "target", healMin: 0, healMax: 1 }] })}>
+                    <Plus className="h-3 w-3 mr-1" /> Heal Corr.
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "charge-target" }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Charge
@@ -356,6 +359,13 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
       <div className="bg-muted rounded-md p-2 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">apply-condition</span>
+          <Select value={effect.subject} onValueChange={(v) => onChange({ ...effect, subject: v as "target" | "caster" })}>
+            <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="target">target</SelectItem>
+              <SelectItem value="caster">caster</SelectItem>
+            </SelectContent>
+          </Select>
           <Label className="text-xs">Condition</Label>
           <Select value={effect.condition.name} onValueChange={(v) => {
             const dur = effect.condition.durationMax;
@@ -377,7 +387,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
               onChange({ ...effect, condition: { name: "burning", durationMax: dur } });
             }
           }}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="damageReduction">damageReduction</SelectItem>
               <SelectItem value="damageAugmentation">damageAugmentation</SelectItem>
@@ -447,35 +457,90 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
     );
   }
 
-  // corrupt-target (no animation/loop)
-  if (effect.type === "corrupt-target") {
+  // apply-corruption or apply-heal-corruption
+  if (effect.type === "apply-corruption" || effect.type === "apply-heal-corruption") {
+    const isCorruption = effect.type === "apply-corruption";
+    const label = isCorruption ? "apply-corruption" : "apply-heal-corruption";
+    const valMin = isCorruption ? effect.corruptionMin : effect.healMin;
+    const valMax = isCorruption ? effect.corruptionMax : effect.healMax;
     const radius = effect.radius ?? 0;
     const minRadius = effect.minRadius ?? 0;
     const shape = effect.shape || "diamond";
+
+    const updateMinMax = (field: "min" | "max", val: number) => {
+      if (isCorruption) {
+        onChange(field === "min" ? { ...effect, corruptionMin: val } : { ...effect, corruptionMax: val });
+      } else {
+        onChange(field === "min" ? { ...effect, healMin: val } : { ...effect, healMax: val });
+      }
+    };
+
     return (
       <div className="bg-muted rounded-md p-2 space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">corrupt-target</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">{label}</span>
+          <Select value={effect.subject} onValueChange={(v) => onChange({ ...effect, subject: v as "target" | "caster" })}>
+            <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="target">target</SelectItem>
+              <SelectItem value="caster">caster</SelectItem>
+            </SelectContent>
+          </Select>
           <Label className="text-xs">Min</Label>
-          <Input type="number" className="h-8 w-16" value={effect.corruptionMin} onChange={(e) => onChange({ ...effect, corruptionMin: parseInt(e.target.value) || 0 })} />
+          <Input type="number" className="h-8 w-16" value={valMin} onChange={(e) => updateMinMax("min", parseInt(e.target.value) || 0)} />
           <Label className="text-xs">Max</Label>
-          <Input type="number" className="h-8 w-16" value={effect.corruptionMax} onChange={(e) => onChange({ ...effect, corruptionMax: parseInt(e.target.value) || 0 })} />
+          <Input type="number" className="h-8 w-16" value={valMax} onChange={(e) => updateMinMax("max", parseInt(e.target.value) || 0)} />
+          <div className="flex items-center gap-1">
+            <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
+            <Label className="text-xs">Loop</Label>
+          </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
         </div>
         <AoeBlock
           radius={radius}
           minRadius={minRadius}
           shape={shape}
-          shapes={AOE_SHAPES_NO_DIAGONAL}
+          shapes={isCorruption ? AOE_SHAPES_NO_DIAGONAL : AOE_SHAPES}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
+
+        {/* Animation frames */}
+        <div className="pl-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Animation Frames</span>
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
+              <Plus className="h-3 w-3 mr-1" /> Frame
+            </Button>
+          </div>
+
+          {(effect.animation || []).map((frame, fi) => (
+            <AnimationFrameRow
+              key={fi}
+              frame={frame}
+              onChange={(f) => {
+                const anim = [...(effect.animation || [])];
+                anim[fi] = f;
+                onChange({ ...effect, animation: anim });
+              }}
+              onDelete={() => onChange({ ...effect, animation: (effect.animation || []).filter((_, i) => i !== fi) })}
+            />
+          ))}
+
+          {(effect.animation || []).length > 0 && (
+            <AnimationPreview
+              spriteSheetSrc={spriteSheet}
+              frames={effect.animation || []}
+              loop={!!effect.loop}
+            />
+          )}
+        </div>
       </div>
     );
   }
 
-  // damage-target or heal-target
-  const isDamage = effect.type === "damage-target";
-  const label = isDamage ? "damage-target" : "heal-target";
+  // apply-damage or apply-heal
+  const isDamage = effect.type === "apply-damage";
+  const label = isDamage ? "apply-damage" : "apply-heal";
   const valMin = isDamage ? effect.damageMin : effect.healMin;
   const valMax = isDamage ? effect.damageMax : effect.healMax;
   const radius = effect.radius ?? 0;
@@ -492,8 +557,15 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
 
   return (
     <div className="bg-muted rounded-md p-2 space-y-2">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">{label}</span>
+        <Select value={effect.subject} onValueChange={(v) => onChange({ ...effect, subject: v as "target" | "caster" })}>
+          <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="target">target</SelectItem>
+            <SelectItem value="caster">caster</SelectItem>
+          </SelectContent>
+        </Select>
         <Label className="text-xs">Min</Label>
         <Input type="number" className="h-8 w-16" value={valMin} onChange={(e) => updateMinMax("min", parseInt(e.target.value) || 0)} />
         <Label className="text-xs">Max</Label>
@@ -601,12 +673,18 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onChange }: {
       <div className="space-y-1">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">Side Effects</span>
-          <div className="flex gap-1">
-            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "damage-target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" }] })}>
+          <div className="flex gap-1 flex-wrap">
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "apply-damage", subject: "target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" }] })}>
               <Plus className="h-3 w-3 mr-1" /> Damage
             </Button>
-            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "heal-target", healMin: 0, healMax: 1 }] })}>
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "apply-heal", subject: "target", healMin: 0, healMax: 1 }] })}>
               <Plus className="h-3 w-3 mr-1" /> Heal
+            </Button>
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "apply-corruption", subject: "target", corruptionMin: 0, corruptionMax: 1 }] })}>
+              <Plus className="h-3 w-3 mr-1" /> Corruption
+            </Button>
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "apply-condition", subject: "target", condition: { name: "damageReduction", durationMax: 1 } }] })}>
+              <Plus className="h-3 w-3 mr-1" /> Cond.
             </Button>
           </div>
         </div>
