@@ -26,6 +26,7 @@ import { AoePreview } from "./AoePreview";
 const AUDIO_IDS = ["footstep", "door", "chest", "chest_close", "ui_click", "sword_attack", "hurt"] as const;
 const AOE_SHAPES: AoeShape[] = ["diamond", "square", "circle", "cross", "diagonal"];
 const AOE_SHAPES_NO_DIAGONAL: AoeShape[] = ["diamond", "square", "circle", "cross"];
+const CONDITION_NAMES: ConditionName[] = ["damageReduction", "damageAugmentation", "defensiveStance", "offensiveStance", "bleeding", "burning"];
 
 interface SkillEditorProps {
   skill: Skill;
@@ -185,6 +186,9 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                   <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "push-target", pushForce: 1 }] })}>
                     <Plus className="h-3 w-3 mr-1" /> Push
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-condition-cleanse", subject: "target", conditionCleaner: "all" }] })}>
+                    <Plus className="h-3 w-3 mr-1" /> Cleanse
+                  </Button>
                 </div>
               </div>
               {skill.sideEffects.map((se, si) => (
@@ -330,6 +334,107 @@ function AoeBlock({ radius, minRadius, shape, shapes, onChange }: {
 }
 
 function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: SideEffect; spriteSheet: string; onChange: (e: SideEffect) => void; onDelete: () => void }) {
+  if (effect.type === "apply-condition-cleanse") {
+    const radius = effect.radius ?? 0;
+    const minRadius = effect.minRadius ?? 0;
+    const shape = effect.shape || "diamond";
+
+    return (
+      <div className="bg-muted rounded-md p-2 space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">apply-cleanse</span>
+          <Select value={effect.subject} onValueChange={(v) => onChange({ ...effect, subject: v as "target" | "caster" })}>
+            <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="target">target</SelectItem>
+              <SelectItem value="caster">caster</SelectItem>
+            </SelectContent>
+          </Select>
+          <Label className="text-xs">Cleanse</Label>
+          <Select 
+            value={effect.conditionCleaner === "all" ? "all" : "specific"} 
+            onValueChange={(v) => onChange({ ...effect, conditionCleaner: v === "all" ? "all" : [] })}
+          >
+            <SelectTrigger className="h-8 text-xs w-24"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">all</SelectItem>
+              <SelectItem value="specific">specific</SelectItem>
+            </SelectContent>
+          </Select>
+          {effect.conditionCleaner !== "all" && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {CONDITION_NAMES.map((name) => (
+                <div key={name} className="flex items-center gap-1 bg-background px-2 py-0.5 rounded border border-border">
+                  <Checkbox 
+                    id={`cleanse-${name}`}
+                    checked={(effect.conditionCleaner as ConditionName[]).includes(name)} 
+                    onCheckedChange={(checked) => {
+                      const cleaner = [...(effect.conditionCleaner as ConditionName[])];
+                      if (checked) {
+                        cleaner.push(name);
+                      } else {
+                        const idx = cleaner.indexOf(name);
+                        if (idx > -1) cleaner.splice(idx, 1);
+                      }
+                      onChange({ ...effect, conditionCleaner: cleaner });
+                    }}
+                  />
+                  <Label htmlFor={`cleanse-${name}`} className="text-[10px] leading-none cursor-pointer">{name}</Label>
+                </div>
+              ))}
+            </div>
+          )}
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        </div>
+
+        <AoeBlock
+          radius={radius}
+          minRadius={minRadius}
+          shape={shape}
+          shapes={AOE_SHAPES}
+          onChange={(patch) => onChange({ ...effect, ...patch })}
+        />
+
+        {/* Animation frames */}
+        <div className="pl-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-muted-foreground">Animation Frames</span>
+              <div className="flex items-center gap-1">
+                <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
+                <Label className="text-xs">Loop</Label>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
+              <Plus className="h-3 w-3 mr-1" /> Frame
+            </Button>
+          </div>
+
+          {(effect.animation || []).map((frame, fi) => (
+            <AnimationFrameRow
+              key={fi}
+              frame={frame}
+              onChange={(f) => {
+                const anim = [...(effect.animation || [])];
+                anim[fi] = f;
+                onChange({ ...effect, animation: anim });
+              }}
+              onDelete={() => onChange({ ...effect, animation: (effect.animation || []).filter((_, i) => i !== fi) })}
+            />
+          ))}
+
+          {(effect.animation || []).length > 0 && (
+            <AnimationPreview
+              spriteSheetSrc={spriteSheet}
+              frames={effect.animation || []}
+              loop={!!effect.loop}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (effect.type === "charge-target" || effect.type === "pull-target") {
     return (
       <div className="flex items-center gap-2 bg-muted rounded-md p-2">
@@ -399,10 +504,6 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           </Select>
           <Label className="text-xs">Duration</Label>
           <Input type="number" className="h-8 w-16" value={effect.condition.durationMax} onChange={(e) => onChange({ ...effect, condition: { ...effect.condition, durationMax: parseInt(e.target.value) || 1 } })} min={1} />
-          <div className="flex items-center gap-1">
-            <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
-            <Label className="text-xs">Loop</Label>
-          </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
         </div>
 
@@ -426,7 +527,13 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         {/* Animation frames */}
         <div className="pl-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Animation Frames</span>
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-muted-foreground">Animation Frames</span>
+              <div className="flex items-center gap-1">
+                <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
+                <Label className="text-xs">Loop</Label>
+              </div>
+            </div>
             <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
               <Plus className="h-3 w-3 mr-1" /> Frame
             </Button>
@@ -490,10 +597,6 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           <Input type="number" className="h-8 w-16" value={valMin} onChange={(e) => updateMinMax("min", parseInt(e.target.value) || 0)} />
           <Label className="text-xs">Max</Label>
           <Input type="number" className="h-8 w-16" value={valMax} onChange={(e) => updateMinMax("max", parseInt(e.target.value) || 0)} />
-          <div className="flex items-center gap-1">
-            <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
-            <Label className="text-xs">Loop</Label>
-          </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
         </div>
         <AoeBlock
@@ -507,7 +610,13 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         {/* Animation frames */}
         <div className="pl-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Animation Frames</span>
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-muted-foreground">Animation Frames</span>
+              <div className="flex items-center gap-1">
+                <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
+                <Label className="text-xs">Loop</Label>
+              </div>
+            </div>
             <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
               <Plus className="h-3 w-3 mr-1" /> Frame
             </Button>
@@ -570,10 +679,6 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         <Input type="number" className="h-8 w-16" value={valMin} onChange={(e) => updateMinMax("min", parseInt(e.target.value) || 0)} />
         <Label className="text-xs">Max</Label>
         <Input type="number" className="h-8 w-16" value={valMax} onChange={(e) => updateMinMax("max", parseInt(e.target.value) || 0)} />
-        <div className="flex items-center gap-1">
-          <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
-          <Label className="text-xs">Loop</Label>
-        </div>
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
       </div>
 
@@ -588,7 +693,13 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
       {/* Animation frames */}
       <div className="pl-4 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Animation Frames</span>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-muted-foreground">Animation Frames</span>
+            <div className="flex items-center gap-1">
+              <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
+              <Label className="text-xs">Loop</Label>
+            </div>
+          </div>
           <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
             <Plus className="h-3 w-3 mr-1" /> Frame
           </Button>

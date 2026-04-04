@@ -18,6 +18,14 @@ export interface AnimationDefinition {
 
 export type Subject = "caster" | "target";
 
+export type ConditionName =
+  | "damageReduction"
+  | "damageAugmentation"
+  | "defensiveStance"
+  | "offensiveStance"
+  | "bleeding"
+  | "burning";
+
 export type AoeShape = "diamond" | "square" | "circle" | "cross" | "diagonal";
 
 export type SideEffect =
@@ -75,6 +83,16 @@ export type SideEffect =
       type: "apply-condition";
       subject: Subject;
       condition: ConditionJson;
+      radius?: number;
+      minRadius?: number;
+      shape?: "diamond" | "square" | "circle" | "cross" | "diagonal";
+      animation?: AnimationDefinition[];
+      loop?: boolean;
+    }
+  | {
+      type: "apply-condition-cleanse";
+      subject: Subject;
+      conditionCleaner: "all" | ConditionName[];
       radius?: number;
       minRadius?: number;
       shape?: "diamond" | "square" | "circle" | "cross" | "diagonal";
