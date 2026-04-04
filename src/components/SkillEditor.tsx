@@ -18,8 +18,11 @@ import type {
   ReactionSkillJson,
   FrameEvent,
 } from "@/types/actor";
-import { ChevronDown, ImagePlus, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, GripVertical, ImagePlus, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { IconPreview } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
 import { AoePreview } from "./AoePreview";
@@ -388,6 +391,35 @@ function AoeBlock({ radius, minRadius, shape, shapes, onChange }: {
           <AoePreview radius={radius} minRadius={minRadius} shape={shape} />
         )}
       </div>
+    </div>
+  );
+}
+
+function SortableSideEffectRow({
+  id,
+  effect,
+  spriteSheet,
+  onChange,
+  onDelete,
+}: {
+  id: string;
+  effect: SideEffect;
+  spriteSheet: string;
+  onChange: (e: SideEffect) => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="relative group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute left-0 top-2 -ml-5 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <SideEffectRow effect={effect} spriteSheet={spriteSheet} onChange={onChange} onDelete={onDelete} />
     </div>
   );
 }
