@@ -42,14 +42,14 @@ const SIDE_EFFECT_OPTIONS: readonly EffectOption[] = [
   { label: "Damage",          group: "Damage & Healing", default: { type: "apply-damage",           subject: "target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" } },
   { label: "Heal",            group: "Damage & Healing", default: { type: "apply-heal",             subject: "target", healMin: 0, healMax: 1 } },
   { label: "Corruption",      group: "Damage & Healing", default: { type: "apply-corruption",       subject: "target", corruptionMin: 0, corruptionMax: 1 } },
-  { label: "Heal Corruption", group: "Damage & Healing", default: { type: "apply-heal-corruption",  subject: "target", healMin: 0, healMax: 1 } },
-  { label: "Charge",          group: "Movement",         default: { type: "charge-target" } },
-  { label: "Pull",            group: "Movement",         default: { type: "pull-target" } },
-  { label: "Push",            group: "Movement",         default: { type: "push-target", pushForce: 1 } },
-  { label: "Condition",       group: "Status",           default: { type: "apply-condition",        subject: "target", condition: { name: "damageReduction", durationMax: 1 } } },
-  { label: "Cleanse",         group: "Status",           default: { type: "apply-condition-cleanse", subject: "target", conditionCleaner: "all" } },
-  { label: "Dmg/Condition",  group: "Damage & Healing", default: { type: "apply-damage-per-condition", subject: "target", conditionName: "bleeding", damagePerStack: 1 } },
-  { label: "Heal/Condition", group: "Damage & Healing", default: { type: "apply-heal-per-condition",  subject: "target", conditionName: "bleeding", healPerStack: 1 } },
+  { label: "Heal Corruption",       group: "Damage & Healing", default: { type: "apply-heal-corruption",       subject: "target", healMin: 0, healMax: 1 } },
+  { label: "Damage per Condition",  group: "Damage & Healing", default: { type: "apply-damage-per-condition", subject: "target", conditionName: "bleeding", damagePerStack: 1 } },
+  { label: "Heal per Condition",    group: "Damage & Healing", default: { type: "apply-heal-per-condition",   subject: "target", conditionName: "bleeding", healPerStack: 1 } },
+  { label: "Charge",                group: "Movement",         default: { type: "charge-target" } },
+  { label: "Pull",                  group: "Movement",         default: { type: "pull-target" } },
+  { label: "Push",                  group: "Movement",         default: { type: "push-target", pushForce: 1 } },
+  { label: "Condition",             group: "Status",           default: { type: "apply-condition",             subject: "target", condition: { name: "damageReduction", durationMax: 1 } } },
+  { label: "Cleanse",               group: "Status",           default: { type: "apply-condition-cleanse",     subject: "target", conditionCleaner: "all" } },
 ];
 
 export function filterEffectOptions(query: string): EffectOption[] {

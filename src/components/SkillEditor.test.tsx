@@ -12,7 +12,7 @@ describe("filterEffectOptions", () => {
 
   it("filters case-insensitively by label", () => {
     const results = filterEffectOptions("heal");
-    expect(results.map((o) => o.label)).toEqual(["Heal", "Heal Corruption", "Heal/Condition"]);
+    expect(results.map((o) => o.label)).toEqual(["Heal", "Heal Corruption", "Heal per Condition"]);
   });
 
   it("returns empty array when nothing matches", () => {
