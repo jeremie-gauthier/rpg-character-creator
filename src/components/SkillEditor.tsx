@@ -139,6 +139,9 @@ function generateSkillId(race: string, job: string, name: string): string {
 
 export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveImage, onUploadImage, onChange, onDelete, defaultOpen = true }: SkillEditorProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const [reqOpen, setReqOpen] = useState(true);
+  const [constraintsOpen, setConstraintsOpen] = useState(true);
+  const [sideEffectsOpen, setSideEffectsOpen] = useState(true);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -209,82 +212,103 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
             </div>
 
             {/* Requirements */}
-            <section className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-foreground">Requirements</h4>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => update({ requirements: [...skill.requirements, { type: "resource_cost", resource: "ACTION_POINTS", amount: 1 }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Resource
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={hasSanityReq} onClick={() => update({ requirements: [...skill.requirements, { type: "sanity_form", expectedForm: "PURE" }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Sanity
-                  </Button>
+            <Collapsible open={reqOpen} onOpenChange={setReqOpen}>
+              <section className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <CollapsibleTrigger className="flex items-center gap-1 hover:opacity-70 transition-opacity">
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${reqOpen ? "" : "-rotate-90"}`} />
+                    <h4 className="text-sm font-semibold text-foreground">Requirements</h4>
+                  </CollapsibleTrigger>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" onClick={() => update({ requirements: [...skill.requirements, { type: "resource_cost", resource: "ACTION_POINTS", amount: 1 }] })}>
+                      <Plus className="h-3 w-3 mr-1" /> Resource
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={hasSanityReq} onClick={() => update({ requirements: [...skill.requirements, { type: "sanity_form", expectedForm: "PURE" }] })}>
+                      <Plus className="h-3 w-3 mr-1" /> Sanity
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              {skill.requirements.map((req, ri) => (
-                <RequirementRow key={ri} req={req} onChange={(r) => { const a = [...skill.requirements]; a[ri] = r; update({ requirements: a }); }} onDelete={() => update({ requirements: skill.requirements.filter((_, i) => i !== ri) })} />
-              ))}
-            </section>
+                <CollapsibleContent className="space-y-2">
+                  {skill.requirements.map((req, ri) => (
+                    <RequirementRow key={ri} req={req} onChange={(r) => { const a = [...skill.requirements]; a[ri] = r; update({ requirements: a }); }} onDelete={() => update({ requirements: skill.requirements.filter((_, i) => i !== ri) })} />
+                  ))}
+                </CollapsibleContent>
+              </section>
+            </Collapsible>
 
             {/* Constraints */}
-            <section className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-foreground">Constraints</h4>
-                <div className="flex gap-1">
-                  {!skill.constraints.some(c => c.type === "cast") && (
-                    <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cast", minRange: 0, maxRange: 1 }] })}>
-                      <Plus className="h-3 w-3 mr-1" /> Cast
-                    </Button>
-                  )}
-                  {!skill.constraints.some(c => c.type === "cooldown") && (
-                    <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cooldown", turns: 1 }] })}>
-                      <Plus className="h-3 w-3 mr-1" /> Cooldown
-                    </Button>
-                  )}
-                  {!skill.constraints.some(c => c.type === "usagePerTurn") && (
-                    <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "usagePerTurn", max: 1 }] })}>
-                      <Plus className="h-3 w-3 mr-1" /> Usage/Turn
-                    </Button>
-                  )}
+            <Collapsible open={constraintsOpen} onOpenChange={setConstraintsOpen}>
+              <section className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <CollapsibleTrigger className="flex items-center gap-1 hover:opacity-70 transition-opacity">
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${constraintsOpen ? "" : "-rotate-90"}`} />
+                    <h4 className="text-sm font-semibold text-foreground">Constraints</h4>
+                  </CollapsibleTrigger>
+                  <div className="flex gap-1">
+                    {!skill.constraints.some(c => c.type === "cast") && (
+                      <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cast", minRange: 0, maxRange: 1 }] })}>
+                        <Plus className="h-3 w-3 mr-1" /> Cast
+                      </Button>
+                    )}
+                    {!skill.constraints.some(c => c.type === "cooldown") && (
+                      <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cooldown", turns: 1 }] })}>
+                        <Plus className="h-3 w-3 mr-1" /> Cooldown
+                      </Button>
+                    )}
+                    {!skill.constraints.some(c => c.type === "usagePerTurn") && (
+                      <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "usagePerTurn", max: 1 }] })}>
+                        <Plus className="h-3 w-3 mr-1" /> Usage/Turn
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-              {skill.constraints.map((c, ci) => (
-                <ConstraintRow key={ci} constraint={c} onChange={(v) => { const a = [...skill.constraints]; a[ci] = v; update({ constraints: a }); }} onDelete={() => update({ constraints: skill.constraints.filter((_, i) => i !== ci) })} />
-              ))}
-            </section>
+                <CollapsibleContent className="space-y-2">
+                  {skill.constraints.map((c, ci) => (
+                    <ConstraintRow key={ci} constraint={c} onChange={(v) => { const a = [...skill.constraints]; a[ci] = v; update({ constraints: a }); }} onDelete={() => update({ constraints: skill.constraints.filter((_, i) => i !== ci) })} />
+                  ))}
+                </CollapsibleContent>
+              </section>
+            </Collapsible>
 
             {/* Side Effects */}
-            <section className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-foreground">Side Effects</h4>
-                <AddEffectPopover onAdd={(effect) => update({ sideEffects: [...skill.sideEffects, effect] })} />
-              </div>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={(event: DragEndEvent) => {
-                  const { active, over } = event;
-                  if (over && active.id !== over.id) {
-                    const oldIndex = Number(active.id);
-                    const newIndex = Number(over.id);
-                    update({ sideEffects: arrayMove(skill.sideEffects, oldIndex, newIndex) });
-                  }
-                }}
-              >
-                <SortableContext items={skill.sideEffects.map((_, i) => String(i))} strategy={verticalListSortingStrategy}>
-                  {skill.sideEffects.map((se, si) => (
-                    <SortableSideEffectRow
-                      key={si}
-                      id={String(si)}
-                      effect={se}
-                      spriteSheet={spriteSheet}
-                      onChange={(v) => { const a = [...skill.sideEffects]; a[si] = v; update({ sideEffects: a }); }}
-                      onDelete={() => update({ sideEffects: skill.sideEffects.filter((_, i) => i !== si) })}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
-            </section>
+            <Collapsible open={sideEffectsOpen} onOpenChange={setSideEffectsOpen}>
+              <section className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <CollapsibleTrigger className="flex items-center gap-1 hover:opacity-70 transition-opacity">
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${sideEffectsOpen ? "" : "-rotate-90"}`} />
+                    <h4 className="text-sm font-semibold text-foreground">Side Effects</h4>
+                  </CollapsibleTrigger>
+                  <AddEffectPopover onAdd={(effect) => update({ sideEffects: [...skill.sideEffects, effect] })} />
+                </div>
+                <CollapsibleContent className="space-y-2">
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event: DragEndEvent) => {
+                      const { active, over } = event;
+                      if (over && active.id !== over.id) {
+                        const oldIndex = Number(active.id);
+                        const newIndex = Number(over.id);
+                        update({ sideEffects: arrayMove(skill.sideEffects, oldIndex, newIndex) });
+                      }
+                    }}
+                  >
+                    <SortableContext items={skill.sideEffects.map((_, i) => String(i))} strategy={verticalListSortingStrategy}>
+                      {skill.sideEffects.map((se, si) => (
+                        <SortableSideEffectRow
+                          key={si}
+                          id={String(si)}
+                          effect={se}
+                          spriteSheet={spriteSheet}
+                          onChange={(v) => { const a = [...skill.sideEffects]; a[si] = v; update({ sideEffects: a }); }}
+                          onDelete={() => update({ sideEffects: skill.sideEffects.filter((_, i) => i !== si) })}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                </CollapsibleContent>
+              </section>
+            </Collapsible>
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
