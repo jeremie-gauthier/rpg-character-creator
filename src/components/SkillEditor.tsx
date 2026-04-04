@@ -14,12 +14,12 @@ import type {
   AnimationDefinition,
   AoeShape,
   ConditionJson,
+  ConditionName,
   ReactionSkillJson,
   FrameEvent,
 } from "@/types/actor";
-import { ChevronDown, Trash2, Plus } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
-import { ImagePlus } from "lucide-react";
+import { ChevronDown, ImagePlus, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { IconPreview } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
 import { AoePreview } from "./AoePreview";
