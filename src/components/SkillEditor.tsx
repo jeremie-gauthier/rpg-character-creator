@@ -138,7 +138,7 @@ function generateSkillId(race: string, job: string, name: string): string {
 export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveImage, onUploadImage, onChange, onDelete, defaultOpen = true }: SkillEditorProps) {
   const [open, setOpen] = useState(defaultOpen);
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
