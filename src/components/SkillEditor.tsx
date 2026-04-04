@@ -248,35 +248,7 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
             <section className="space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-foreground">Side Effects</h4>
-                <div className="flex gap-1 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-damage", subject: "target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Damage
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-heal", subject: "target", healMin: 0, healMax: 1 }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Heal
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-condition", subject: "target", condition: { name: "damageReduction", durationMax: 1 } }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Condition
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-corruption", subject: "target", corruptionMin: 0, corruptionMax: 1 }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Corruption
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-heal-corruption", subject: "target", healMin: 0, healMax: 1 }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Heal Corr.
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "charge-target" }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Charge
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "pull-target" }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Pull
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "push-target", pushForce: 1 }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Push
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => update({ sideEffects: [...skill.sideEffects, { type: "apply-condition-cleanse", subject: "target", conditionCleaner: "all" }] })}>
-                    <Plus className="h-3 w-3 mr-1" /> Cleanse
-                  </Button>
-                </div>
+                <AddEffectPopover onAdd={(effect) => update({ sideEffects: [...skill.sideEffects, effect] })} />
               </div>
               {skill.sideEffects.map((se, si) => (
                 <SideEffectRow key={si} effect={se} spriteSheet={spriteSheet} onChange={(v) => { const a = [...skill.sideEffects]; a[si] = v; update({ sideEffects: a }); }} onDelete={() => update({ sideEffects: skill.sideEffects.filter((_, i) => i !== si) })} />
