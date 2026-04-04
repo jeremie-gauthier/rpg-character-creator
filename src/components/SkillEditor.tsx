@@ -163,8 +163,9 @@ function PresetAnimationPopover({ onSelect }: { onSelect: (frames: AnimationDefi
           {filtered.length > 0 ? (
             filtered.map((key) => (
               <button
+                type="button"
                 key={key}
-                className="w-full text-left text-xs px-2 py-1 rounded hover:bg-accent"
+                className="w-full text-left text-xs px-2 py-1 rounded hover:bg-accent hover:text-accent-foreground"
                 onClick={() => handleSelect(key)}
               >
                 {key}
