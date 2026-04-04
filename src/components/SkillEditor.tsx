@@ -28,6 +28,30 @@ const AOE_SHAPES: AoeShape[] = ["diamond", "square", "circle", "cross", "diagona
 const AOE_SHAPES_NO_DIAGONAL: AoeShape[] = ["diamond", "square", "circle", "cross"];
 const CONDITION_NAMES: ConditionName[] = ["damageReduction", "damageAugmentation", "defensiveStance", "offensiveStance", "bleeding", "burning"];
 
+type EffectOption = {
+  label: string;
+  group: "Damage & Healing" | "Movement" | "Status";
+  default: SideEffect;
+};
+
+const SIDE_EFFECT_OPTIONS: EffectOption[] = [
+  { label: "Damage",          group: "Damage & Healing", default: { type: "apply-damage",           subject: "target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" } },
+  { label: "Heal",            group: "Damage & Healing", default: { type: "apply-heal",             subject: "target", healMin: 0, healMax: 1 } },
+  { label: "Corruption",      group: "Damage & Healing", default: { type: "apply-corruption",       subject: "target", corruptionMin: 0, corruptionMax: 1 } },
+  { label: "Heal Corruption", group: "Damage & Healing", default: { type: "apply-heal-corruption",  subject: "target", healMin: 0, healMax: 1 } },
+  { label: "Charge",          group: "Movement",         default: { type: "charge-target" } },
+  { label: "Pull",            group: "Movement",         default: { type: "pull-target" } },
+  { label: "Push",            group: "Movement",         default: { type: "push-target", pushForce: 1 } },
+  { label: "Condition",       group: "Status",           default: { type: "apply-condition",        subject: "target", condition: { name: "damageReduction", durationMax: 1 } } },
+  { label: "Cleanse",         group: "Status",           default: { type: "apply-condition-cleanse", subject: "target", conditionCleaner: "all" } },
+];
+
+export function filterEffectOptions(query: string): EffectOption[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return SIDE_EFFECT_OPTIONS;
+  return SIDE_EFFECT_OPTIONS.filter((o) => o.label.toLowerCase().includes(q));
+}
+
 interface SkillEditorProps {
   skill: Skill;
   actorRace: string;
