@@ -912,7 +912,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         animation={effect.animation || []}
         loop={!!effect.loop}
         spriteSheet={spriteSheet}
-        onChange={(patch) => onChange({ ...effect, ...(patch.animation !== undefined ? { animation: patch.animation } : {}), ...(patch.loop !== undefined ? { loop: patch.loop } : {}) })}
+        onChange={(patch) => onChange({ ...effect, ...patch })}
       />
     </div>
   );
