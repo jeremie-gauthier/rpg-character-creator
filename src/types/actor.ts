@@ -107,6 +107,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: AoeShape;
+      animation?: AnimationDefinition[];
+      loop?: boolean;
     }
   | {
       type: "apply-heal-per-condition";
@@ -116,6 +118,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: AoeShape;
+      animation?: AnimationDefinition[];
+      loop?: boolean;
     };
 
 export type ConditionJson =

@@ -807,7 +807,12 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           shapes={AOE_SHAPES}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
-        {/* No animation: not supported by the game engine for per-condition effects */}
+        <AnimationFramesSection
+          animation={effect.animation || []}
+          loop={!!effect.loop}
+          spriteSheet={spriteSheet}
+          onChange={(patch) => onChange({ ...effect, ...patch })}
+        />
       </div>
     );
   }
