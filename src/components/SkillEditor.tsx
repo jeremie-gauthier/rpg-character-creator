@@ -137,6 +137,10 @@ function generateSkillId(race: string, job: string, name: string): string {
 
 export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveImage, onUploadImage, onChange, onDelete, defaultOpen = true }: SkillEditorProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const update = (partial: Partial<Skill>) => {
     const merged = { ...skill, ...partial };
@@ -253,9 +257,31 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                 <h4 className="text-sm font-semibold text-foreground">Side Effects</h4>
                 <AddEffectPopover onAdd={(effect) => update({ sideEffects: [...skill.sideEffects, effect] })} />
               </div>
-              {skill.sideEffects.map((se, si) => (
-                <SideEffectRow key={si} effect={se} spriteSheet={spriteSheet} onChange={(v) => { const a = [...skill.sideEffects]; a[si] = v; update({ sideEffects: a }); }} onDelete={() => update({ sideEffects: skill.sideEffects.filter((_, i) => i !== si) })} />
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(event: DragEndEvent) => {
+                  const { active, over } = event;
+                  if (over && active.id !== over.id) {
+                    const oldIndex = Number(active.id);
+                    const newIndex = Number(over.id);
+                    update({ sideEffects: arrayMove(skill.sideEffects, oldIndex, newIndex) });
+                  }
+                }}
+              >
+                <SortableContext items={skill.sideEffects.map((_, i) => String(i))} strategy={verticalListSortingStrategy}>
+                  {skill.sideEffects.map((se, si) => (
+                    <SortableSideEffectRow
+                      key={si}
+                      id={String(si)}
+                      effect={se}
+                      spriteSheet={spriteSheet}
+                      onChange={(v) => { const a = [...skill.sideEffects]; a[si] = v; update({ sideEffects: a }); }}
+                      onDelete={() => update({ sideEffects: skill.sideEffects.filter((_, i) => i !== si) })}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </section>
           </CardContent>
         </CollapsibleContent>
