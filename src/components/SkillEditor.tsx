@@ -28,13 +28,13 @@ const AOE_SHAPES: AoeShape[] = ["diamond", "square", "circle", "cross", "diagona
 const AOE_SHAPES_NO_DIAGONAL: AoeShape[] = ["diamond", "square", "circle", "cross"];
 const CONDITION_NAMES: ConditionName[] = ["damageReduction", "damageAugmentation", "defensiveStance", "offensiveStance", "bleeding", "burning"];
 
-type EffectOption = {
-  label: string;
-  group: "Damage & Healing" | "Movement" | "Status";
-  default: SideEffect;
+export type EffectOption = {
+  readonly label: string;
+  readonly group: "Damage & Healing" | "Movement" | "Status";
+  readonly default: SideEffect;
 };
 
-const SIDE_EFFECT_OPTIONS: EffectOption[] = [
+const SIDE_EFFECT_OPTIONS: readonly EffectOption[] = [
   { label: "Damage",          group: "Damage & Healing", default: { type: "apply-damage",           subject: "target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" } },
   { label: "Heal",            group: "Damage & Healing", default: { type: "apply-heal",             subject: "target", healMin: 0, healMax: 1 } },
   { label: "Corruption",      group: "Damage & Healing", default: { type: "apply-corruption",       subject: "target", corruptionMin: 0, corruptionMax: 1 } },
