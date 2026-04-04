@@ -48,6 +48,8 @@ const SIDE_EFFECT_OPTIONS: readonly EffectOption[] = [
   { label: "Push",            group: "Movement",         default: { type: "push-target", pushForce: 1 } },
   { label: "Condition",       group: "Status",           default: { type: "apply-condition",        subject: "target", condition: { name: "damageReduction", durationMax: 1 } } },
   { label: "Cleanse",         group: "Status",           default: { type: "apply-condition-cleanse", subject: "target", conditionCleaner: "all" } },
+  { label: "Dmg/Condition",  group: "Damage & Healing", default: { type: "apply-damage-per-condition", subject: "target", conditionName: "bleeding", damagePerStack: 1 } },
+  { label: "Heal/Condition", group: "Damage & Healing", default: { type: "apply-heal-per-condition",  subject: "target", conditionName: "bleeding", healPerStack: 1 } },
 ];
 
 export function filterEffectOptions(query: string): EffectOption[] {
