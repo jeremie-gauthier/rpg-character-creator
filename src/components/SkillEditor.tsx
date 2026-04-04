@@ -686,7 +686,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
   // apply-damage-per-condition or apply-heal-per-condition
   if (effect.type === "apply-damage-per-condition" || effect.type === "apply-heal-per-condition") {
     const isDamage = effect.type === "apply-damage-per-condition";
-    const label = isDamage ? "dmg/condition" : "heal/condition";
+    const label = isDamage ? "apply-dmg/cond" : "apply-heal/cond";
     const perStack = isDamage ? effect.damagePerStack : effect.healPerStack;
     const radius = effect.radius ?? 0;
     const minRadius = effect.minRadius ?? 0;
@@ -729,6 +729,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           shapes={AOE_SHAPES}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
+        {/* No animation: not supported by the game engine for per-condition effects */}
       </div>
     );
   }
