@@ -683,6 +683,56 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
     );
   }
 
+  // apply-damage-per-condition or apply-heal-per-condition
+  if (effect.type === "apply-damage-per-condition" || effect.type === "apply-heal-per-condition") {
+    const isDamage = effect.type === "apply-damage-per-condition";
+    const label = isDamage ? "dmg/condition" : "heal/condition";
+    const perStack = isDamage ? effect.damagePerStack : effect.healPerStack;
+    const radius = effect.radius ?? 0;
+    const minRadius = effect.minRadius ?? 0;
+    const shape = effect.shape || "diamond";
+
+    return (
+      <div className="bg-muted rounded-md p-2 space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">{label}</span>
+          <Select value={effect.subject} onValueChange={(v) => onChange({ ...effect, subject: v as "target" | "caster" })}>
+            <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="target">target</SelectItem>
+              <SelectItem value="caster">caster</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={effect.conditionName} onValueChange={(v) => onChange({ ...effect, conditionName: v as ConditionName })}>
+            <SelectTrigger className="h-8 text-xs w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {CONDITION_NAMES.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Label className="text-xs">{isDamage ? "Dmg/stack" : "Heal/stack"}</Label>
+          <Input
+            type="number"
+            className="h-8 w-16"
+            value={perStack}
+            min={1}
+            onChange={(e) => {
+              const val = parseInt(e.target.value) || 1;
+              onChange(isDamage ? { ...effect, damagePerStack: val } : { ...effect, healPerStack: val });
+            }}
+          />
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        </div>
+        <AoeBlock
+          radius={radius}
+          minRadius={minRadius}
+          shape={shape}
+          shapes={AOE_SHAPES}
+          onChange={(patch) => onChange({ ...effect, ...patch })}
+        />
+      </div>
+    );
+  }
+
   // apply-corruption or apply-heal-corruption
   if (effect.type === "apply-corruption" || effect.type === "apply-heal-corruption") {
     const isCorruption = effect.type === "apply-corruption";
