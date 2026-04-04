@@ -36,7 +36,7 @@ export type SideEffect =
       damageMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: "diamond" | "square" | "circle" | "cross";
+      shape?: AoeShape;
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
@@ -47,7 +47,7 @@ export type SideEffect =
       healMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: "diamond" | "square" | "circle" | "cross";
+      shape?: AoeShape;
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
@@ -64,7 +64,7 @@ export type SideEffect =
       corruptionMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: "diamond" | "square" | "circle" | "cross";
+      shape?: AoeShape;
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
@@ -75,7 +75,7 @@ export type SideEffect =
       healMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: "diamond" | "square" | "circle" | "cross" | "diagonal";
+      shape?: AoeShape;
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
@@ -85,7 +85,7 @@ export type SideEffect =
       condition: ConditionJson;
       radius?: number;
       minRadius?: number;
-      shape?: "diamond" | "square" | "circle" | "cross" | "diagonal";
+      shape?: AoeShape;
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
@@ -95,7 +95,7 @@ export type SideEffect =
       conditionCleaner: "all" | ConditionName[];
       radius?: number;
       minRadius?: number;
-      shape?: "diamond" | "square" | "circle" | "cross" | "diagonal";
+      shape?: AoeShape;
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
