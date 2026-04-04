@@ -18,7 +18,7 @@ import type {
   FrameEvent,
 } from "@/types/actor";
 import { ChevronDown, Trash2, Plus } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ImagePlus } from "lucide-react";
 import { IconPreview } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
@@ -56,6 +56,7 @@ export function filterEffectOptions(query: string): EffectOption[] {
 function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEffect) => void; triggerClassName?: string }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const groups = (["Damage & Healing", "Movement", "Status"] as const);
   const filtered = filterEffectOptions(query);
@@ -73,13 +74,17 @@ function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEff
           <Plus className="h-3 w-3 mr-1" /> Add Effect
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-56 p-2" align="end">
-        <input
-          autoFocus
+      <PopoverContent
+        className="w-56 p-2"
+        align="end"
+        onOpenAutoFocus={(e) => { e.preventDefault(); inputRef.current?.focus(); }}
+      >
+        <Input
+          ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search effects…"
-          className="w-full rounded border border-input bg-background px-2 py-1 text-sm outline-none mb-2"
+          className="w-full mb-2"
         />
         <div className="max-h-64 overflow-y-auto space-y-2">
           {groups.map((group) => {
@@ -90,6 +95,7 @@ function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEff
                 <p className="text-xs text-muted-foreground px-1 mb-1">{group}</p>
                 {items.map((o) => (
                   <button
+                    type="button"
                     key={o.label}
                     onClick={() => handleSelect(o.default)}
                     className="w-full text-left px-2 py-1 text-sm rounded hover:bg-accent hover:text-accent-foreground"
