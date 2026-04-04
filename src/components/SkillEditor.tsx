@@ -189,7 +189,7 @@ function AnimationFramesSection({
   animation: AnimationDefinition[];
   loop: boolean;
   spriteSheet: string | undefined;
-  onChange: (patch: { animation?: AnimationDefinition[]; loop?: boolean }) => void;
+  onChange: (patch: { animation: AnimationDefinition[] } | { loop: boolean }) => void;
 }) {
   return (
     <div className="pl-4 space-y-2">
@@ -656,7 +656,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           animation={effect.animation || []}
           loop={!!effect.loop}
           spriteSheet={spriteSheet}
-          onChange={(patch) => onChange({ ...effect, ...(patch.animation !== undefined ? { animation: patch.animation } : {}), ...(patch.loop !== undefined ? { loop: patch.loop } : {}) })}
+          onChange={(patch) => onChange({ ...effect, ...patch })}
         />
       </div>
     );
@@ -755,7 +755,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           animation={effect.animation || []}
           loop={!!effect.loop}
           spriteSheet={spriteSheet}
-          onChange={(patch) => onChange({ ...effect, ...(patch.animation !== undefined ? { animation: patch.animation } : {}), ...(patch.loop !== undefined ? { loop: patch.loop } : {}) })}
+          onChange={(patch) => onChange({ ...effect, ...patch })}
         />
       </div>
     );
@@ -859,7 +859,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           animation={effect.animation || []}
           loop={!!effect.loop}
           spriteSheet={spriteSheet}
-          onChange={(patch) => onChange({ ...effect, ...(patch.animation !== undefined ? { animation: patch.animation } : {}), ...(patch.loop !== undefined ? { loop: patch.loop } : {}) })}
+          onChange={(patch) => onChange({ ...effect, ...patch })}
         />
       </div>
     );
