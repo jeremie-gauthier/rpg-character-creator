@@ -6,13 +6,13 @@ export const PREDEFINED_ANIMATIONS = {
     { columnIdx: 1, frameDurationMs: 500 },
   ],
   walk: [
-    { columnIdx: 2, frameDurationMs: 75, frameEvents: [{ type: "play_audio" as const, audioId: "footstep" as const }] },
+    { columnIdx: 2, frameDurationMs: 75, frameEvents: [{ type: "play_audio", audioId: "footstep" }] },
     { columnIdx: 3, frameDurationMs: 75 },
-    { columnIdx: 4, frameDurationMs: 75, frameEvents: [{ type: "play_audio" as const, audioId: "footstep" as const }] },
+    { columnIdx: 4, frameDurationMs: 75, frameEvents: [{ type: "play_audio", audioId: "footstep" }] },
   ],
   melee_attack: [
     { columnIdx: 5, frameDurationMs: 120 },
-    { columnIdx: 6, frameDurationMs: 120, frameEvents: [{ type: "play_audio" as const, audioId: "sword_attack" as const }] },
+    { columnIdx: 6, frameDurationMs: 120, frameEvents: [{ type: "play_audio", audioId: "sword_attack" }] },
     { columnIdx: 7, frameDurationMs: 120 },
     { columnIdx: 8, frameDurationMs: 120 },
   ],
@@ -33,10 +33,12 @@ export const PREDEFINED_ANIMATIONS = {
     { columnIdx: 18, frameDurationMs: 120 },
   ],
   hurt: [
-    { columnIdx: 19, frameDurationMs: 150, frameEvents: [{ type: "play_audio" as const, audioId: "hurt" as const }] },
+    { columnIdx: 19, frameDurationMs: 150, frameEvents: [{ type: "play_audio", audioId: "hurt" }] },
     { columnIdx: 20, frameDurationMs: 150 },
     { columnIdx: 21, frameDurationMs: 150 },
   ],
+  // Reuses hurt frame 2 (col 21) as a static stumbling pose; large duration is intentional —
+  // the game runner always transitions to idle before it expires.
   slide: [
     { columnIdx: 21, frameDurationMs: 10000 },
   ],
