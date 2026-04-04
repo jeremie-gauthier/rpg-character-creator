@@ -843,20 +843,10 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onChange }: {
       <div className="space-y-1">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">Side Effects</span>
-          <div className="flex gap-1 flex-wrap">
-            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "apply-damage", subject: "target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" }] })}>
-              <Plus className="h-3 w-3 mr-1" /> Damage
-            </Button>
-            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "apply-heal", subject: "target", healMin: 0, healMax: 1 }] })}>
-              <Plus className="h-3 w-3 mr-1" /> Heal
-            </Button>
-            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "apply-corruption", subject: "target", corruptionMin: 0, corruptionMax: 1 }] })}>
-              <Plus className="h-3 w-3 mr-1" /> Corruption
-            </Button>
-            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ sideEffects: [...rs.sideEffects, { type: "apply-condition", subject: "target", condition: { name: "damageReduction", durationMax: 1 } }] })}>
-              <Plus className="h-3 w-3 mr-1" /> Cond.
-            </Button>
-          </div>
+          <AddEffectPopover
+            onAdd={(effect) => update({ sideEffects: [...rs.sideEffects, effect] })}
+            triggerClassName="h-6 text-xs"
+          />
         </div>
         {rs.sideEffects.map((se, si) => (
           <SideEffectRow key={si} effect={se} spriteSheet={spriteSheet} onChange={(v) => { const a = [...rs.sideEffects]; a[si] = v; update({ sideEffects: a }); }} onDelete={() => update({ sideEffects: rs.sideEffects.filter((_, i) => i !== si) })} />
