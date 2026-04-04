@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type {
   Skill,
   SkillRequirement,
@@ -50,6 +51,62 @@ export function filterEffectOptions(query: string): EffectOption[] {
   const q = query.trim().toLowerCase();
   if (!q) return SIDE_EFFECT_OPTIONS;
   return SIDE_EFFECT_OPTIONS.filter((o) => o.label.toLowerCase().includes(q));
+}
+
+function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEffect) => void; triggerClassName?: string }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const groups = (["Damage & Healing", "Movement", "Status"] as const);
+  const filtered = filterEffectOptions(query);
+
+  const handleSelect = (effect: SideEffect) => {
+    onAdd(effect);
+    setOpen(false);
+    setQuery("");
+  };
+
+  return (
+    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setQuery(""); }}>
+      <PopoverTrigger asChild>
+        <Button size="sm" variant="outline" className={triggerClassName}>
+          <Plus className="h-3 w-3 mr-1" /> Add Effect
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-2" align="end">
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search effects…"
+          className="w-full rounded border border-input bg-background px-2 py-1 text-sm outline-none mb-2"
+        />
+        <div className="max-h-64 overflow-y-auto space-y-2">
+          {groups.map((group) => {
+            const items = filtered.filter((o) => o.group === group);
+            if (items.length === 0) return null;
+            return (
+              <div key={group}>
+                <p className="text-xs text-muted-foreground px-1 mb-1">{group}</p>
+                {items.map((o) => (
+                  <button
+                    key={o.label}
+                    onClick={() => handleSelect(o.default)}
+                    className="w-full text-left px-2 py-1 text-sm rounded hover:bg-accent hover:text-accent-foreground"
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+          {filtered.length === 0 && (
+            <p className="text-xs text-muted-foreground px-1">No effects match.</p>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 interface SkillEditorProps {
