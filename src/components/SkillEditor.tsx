@@ -855,6 +855,11 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onChange }: {
   const rs: ReactionSkillJson = reactionSkill || { id: "", name: "", reactsTo: "enemies", sideEffects: [] };
   const update = (patch: Partial<ReactionSkillJson>) => onChange({ ...rs, ...patch });
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
   return (
     <div className="bg-background rounded p-3 space-y-2 border border-border">
       <span className="text-xs font-semibold text-foreground">Reaction Skill</span>
@@ -906,9 +911,31 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onChange }: {
             triggerClassName="h-6 text-xs"
           />
         </div>
-        {rs.sideEffects.map((se, si) => (
-          <SideEffectRow key={si} effect={se} spriteSheet={spriteSheet} onChange={(v) => { const a = [...rs.sideEffects]; a[si] = v; update({ sideEffects: a }); }} onDelete={() => update({ sideEffects: rs.sideEffects.filter((_, i) => i !== si) })} />
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(event: DragEndEvent) => {
+            const { active, over } = event;
+            if (over && active.id !== over.id) {
+              const oldIndex = Number(active.id);
+              const newIndex = Number(over.id);
+              update({ sideEffects: arrayMove(rs.sideEffects, oldIndex, newIndex) });
+            }
+          }}
+        >
+          <SortableContext items={rs.sideEffects.map((_, i) => String(i))} strategy={verticalListSortingStrategy}>
+            {rs.sideEffects.map((se, si) => (
+              <SortableSideEffectRow
+                key={si}
+                id={String(si)}
+                effect={se}
+                spriteSheet={spriteSheet}
+                onChange={(v) => { const a = [...rs.sideEffects]; a[si] = v; update({ sideEffects: a }); }}
+                onDelete={() => update({ sideEffects: rs.sideEffects.filter((_, i) => i !== si) })}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </div>
     </div>
   );
