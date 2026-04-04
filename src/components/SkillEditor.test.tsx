@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { filterEffectOptions, filterPresetAnimations } from "./SkillEditor";
+import { PREDEFINED_ANIMATION_KEYS } from "@/data/predefined-animations";
 
 describe("filterEffectOptions", () => {
   it("returns all options for empty query", () => {
@@ -22,11 +23,11 @@ describe("filterEffectOptions", () => {
 
 describe("filterPresetAnimations", () => {
   it("returns all keys for empty query", () => {
-    expect(filterPresetAnimations("").length).toBe(10);
+    expect(filterPresetAnimations("").length).toBe(PREDEFINED_ANIMATION_KEYS.length);
   });
 
   it("returns all keys for whitespace-only query", () => {
-    expect(filterPresetAnimations("   ").length).toBe(10);
+    expect(filterPresetAnimations("   ").length).toBe(PREDEFINED_ANIMATION_KEYS.length);
   });
 
   it("filters case-insensitively by key name", () => {
