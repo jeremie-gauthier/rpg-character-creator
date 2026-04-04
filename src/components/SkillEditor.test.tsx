@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { filterEffectOptions } from "./SkillEditor";
+import { filterEffectOptions, filterPresetAnimations } from "./SkillEditor";
 
 describe("filterEffectOptions", () => {
   it("returns all options for empty query", () => {
@@ -17,5 +17,24 @@ describe("filterEffectOptions", () => {
 
   it("returns empty array when nothing matches", () => {
     expect(filterEffectOptions("zzz")).toEqual([]);
+  });
+});
+
+describe("filterPresetAnimations", () => {
+  it("returns all keys for empty query", () => {
+    expect(filterPresetAnimations("").length).toBe(10);
+  });
+
+  it("returns all keys for whitespace-only query", () => {
+    expect(filterPresetAnimations("   ").length).toBe(10);
+  });
+
+  it("filters case-insensitively by key name", () => {
+    const results = filterPresetAnimations("attack");
+    expect(results).toEqual(["melee_attack", "range_attack", "magic_attack", "bare_hand_attack"]);
+  });
+
+  it("returns empty array when nothing matches", () => {
+    expect(filterPresetAnimations("zzz")).toEqual([]);
   });
 });

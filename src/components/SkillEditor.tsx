@@ -26,6 +26,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { IconPreview } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
 import { AoePreview } from "./AoePreview";
+import { PREDEFINED_ANIMATION_KEYS, type PresetAnimationKey } from "@/data/predefined-animations";
 
 const AUDIO_IDS = ["footstep", "door", "chest", "chest_close", "ui_click", "sword_attack", "hurt"] as const;
 const AOE_SHAPES: AoeShape[] = ["diamond", "square", "circle", "cross", "diagonal"];
@@ -56,6 +57,12 @@ export function filterEffectOptions(query: string): EffectOption[] {
   const q = query.trim().toLowerCase();
   if (!q) return SIDE_EFFECT_OPTIONS;
   return SIDE_EFFECT_OPTIONS.filter((o) => o.label.toLowerCase().includes(q));
+}
+
+export function filterPresetAnimations(query: string): PresetAnimationKey[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return PREDEFINED_ANIMATION_KEYS;
+  return PREDEFINED_ANIMATION_KEYS.filter((k) => k.toLowerCase().includes(q));
 }
 
 function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEffect) => void; triggerClassName?: string }) {
