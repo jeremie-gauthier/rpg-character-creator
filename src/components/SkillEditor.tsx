@@ -180,6 +180,60 @@ function PresetAnimationPopover({ onSelect }: { onSelect: (frames: AnimationDefi
   );
 }
 
+function AnimationFramesSection({
+  animation,
+  loop,
+  spriteSheet,
+  onChange,
+}: {
+  animation: AnimationDefinition[];
+  loop: boolean;
+  spriteSheet: string | undefined;
+  onChange: (patch: { animation?: AnimationDefinition[]; loop?: boolean }) => void;
+}) {
+  return (
+    <div className="pl-4 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-muted-foreground">Animation Frames</span>
+          <div className="flex items-center gap-1">
+            <Checkbox checked={loop} onCheckedChange={(v) => onChange({ loop: !!v })} />
+            <Label className="text-xs">Loop</Label>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <PresetAnimationPopover onSelect={(frames) => onChange({ animation: frames })} />
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 text-xs"
+            onClick={() => onChange({ animation: [...animation, { columnIdx: 0, frameDurationMs: 150 }] })}
+          >
+            <Plus className="h-3 w-3 mr-1" /> Frame
+          </Button>
+        </div>
+      </div>
+
+      {animation.map((frame, fi) => (
+        <AnimationFrameRow
+          key={fi}
+          frame={frame}
+          onChange={(f) => {
+            const anim = [...animation];
+            anim[fi] = f;
+            onChange({ animation: anim });
+          }}
+          onDelete={() => onChange({ animation: animation.filter((_, i) => i !== fi) })}
+        />
+      ))}
+
+      {animation.length > 0 && (
+        <AnimationPreview spriteSheetSrc={spriteSheet} frames={animation} loop={loop} />
+      )}
+    </div>
+  );
+}
+
 interface SkillEditorProps {
   skill: Skill;
   actorRace: string;
@@ -598,42 +652,12 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
 
-        {/* Animation frames */}
-        <div className="pl-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-muted-foreground">Animation Frames</span>
-              <div className="flex items-center gap-1">
-                <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
-                <Label className="text-xs">Loop</Label>
-              </div>
-            </div>
-            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
-              <Plus className="h-3 w-3 mr-1" /> Frame
-            </Button>
-          </div>
-
-          {(effect.animation || []).map((frame, fi) => (
-            <AnimationFrameRow
-              key={fi}
-              frame={frame}
-              onChange={(f) => {
-                const anim = [...(effect.animation || [])];
-                anim[fi] = f;
-                onChange({ ...effect, animation: anim });
-              }}
-              onDelete={() => onChange({ ...effect, animation: (effect.animation || []).filter((_, i) => i !== fi) })}
-            />
-          ))}
-
-          {(effect.animation || []).length > 0 && (
-            <AnimationPreview
-              spriteSheetSrc={spriteSheet}
-              frames={effect.animation || []}
-              loop={!!effect.loop}
-            />
-          )}
-        </div>
+        <AnimationFramesSection
+          animation={effect.animation || []}
+          loop={!!effect.loop}
+          spriteSheet={spriteSheet}
+          onChange={(patch) => onChange({ ...effect, ...(patch.animation !== undefined ? { animation: patch.animation } : {}), ...(patch.loop !== undefined ? { loop: patch.loop } : {}) })}
+        />
       </div>
     );
   }
@@ -727,42 +751,12 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
 
-        {/* Animation frames */}
-        <div className="pl-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-muted-foreground">Animation Frames</span>
-              <div className="flex items-center gap-1">
-                <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
-                <Label className="text-xs">Loop</Label>
-              </div>
-            </div>
-            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
-              <Plus className="h-3 w-3 mr-1" /> Frame
-            </Button>
-          </div>
-
-          {(effect.animation || []).map((frame, fi) => (
-            <AnimationFrameRow
-              key={fi}
-              frame={frame}
-              onChange={(f) => {
-                const anim = [...(effect.animation || [])];
-                anim[fi] = f;
-                onChange({ ...effect, animation: anim });
-              }}
-              onDelete={() => onChange({ ...effect, animation: (effect.animation || []).filter((_, i) => i !== fi) })}
-            />
-          ))}
-
-          {(effect.animation || []).length > 0 && (
-            <AnimationPreview
-              spriteSheetSrc={spriteSheet}
-              frames={effect.animation || []}
-              loop={!!effect.loop}
-            />
-          )}
-        </div>
+        <AnimationFramesSection
+          animation={effect.animation || []}
+          loop={!!effect.loop}
+          spriteSheet={spriteSheet}
+          onChange={(patch) => onChange({ ...effect, ...(patch.animation !== undefined ? { animation: patch.animation } : {}), ...(patch.loop !== undefined ? { loop: patch.loop } : {}) })}
+        />
       </div>
     );
   }
@@ -861,42 +855,12 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
 
-        {/* Animation frames */}
-        <div className="pl-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-muted-foreground">Animation Frames</span>
-              <div className="flex items-center gap-1">
-                <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
-                <Label className="text-xs">Loop</Label>
-              </div>
-            </div>
-            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
-              <Plus className="h-3 w-3 mr-1" /> Frame
-            </Button>
-          </div>
-
-          {(effect.animation || []).map((frame, fi) => (
-            <AnimationFrameRow
-              key={fi}
-              frame={frame}
-              onChange={(f) => {
-                const anim = [...(effect.animation || [])];
-                anim[fi] = f;
-                onChange({ ...effect, animation: anim });
-              }}
-              onDelete={() => onChange({ ...effect, animation: (effect.animation || []).filter((_, i) => i !== fi) })}
-            />
-          ))}
-
-          {(effect.animation || []).length > 0 && (
-            <AnimationPreview
-              spriteSheetSrc={spriteSheet}
-              frames={effect.animation || []}
-              loop={!!effect.loop}
-            />
-          )}
-        </div>
+        <AnimationFramesSection
+          animation={effect.animation || []}
+          loop={!!effect.loop}
+          spriteSheet={spriteSheet}
+          onChange={(patch) => onChange({ ...effect, ...(patch.animation !== undefined ? { animation: patch.animation } : {}), ...(patch.loop !== undefined ? { loop: patch.loop } : {}) })}
+        />
       </div>
     );
   }
@@ -944,42 +908,12 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         onChange={(patch) => onChange({ ...effect, ...patch })}
       />
 
-      {/* Animation frames */}
-      <div className="pl-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-muted-foreground">Animation Frames</span>
-            <div className="flex items-center gap-1">
-              <Checkbox checked={!!effect.loop} onCheckedChange={(v) => onChange({ ...effect, loop: !!v })} />
-              <Label className="text-xs">Loop</Label>
-            </div>
-          </div>
-          <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => onChange({ ...effect, animation: [...(effect.animation || []), { columnIdx: 0, frameDurationMs: 150 }] })}>
-            <Plus className="h-3 w-3 mr-1" /> Frame
-          </Button>
-        </div>
-
-        {(effect.animation || []).map((frame, fi) => (
-          <AnimationFrameRow
-            key={fi}
-            frame={frame}
-            onChange={(f) => {
-              const anim = [...(effect.animation || [])];
-              anim[fi] = f;
-              onChange({ ...effect, animation: anim });
-            }}
-            onDelete={() => onChange({ ...effect, animation: (effect.animation || []).filter((_, i) => i !== fi) })}
-          />
-        ))}
-
-        {(effect.animation || []).length > 0 && (
-          <AnimationPreview
-            spriteSheetSrc={spriteSheet}
-            frames={effect.animation || []}
-            loop={!!effect.loop}
-          />
-        )}
-      </div>
+      <AnimationFramesSection
+        animation={effect.animation || []}
+        loop={!!effect.loop}
+        spriteSheet={spriteSheet}
+        onChange={(patch) => onChange({ ...effect, ...(patch.animation !== undefined ? { animation: patch.animation } : {}), ...(patch.loop !== undefined ? { loop: patch.loop } : {}) })}
+      />
     </div>
   );
 }
