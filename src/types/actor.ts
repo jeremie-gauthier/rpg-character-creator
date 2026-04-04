@@ -98,6 +98,24 @@ export type SideEffect =
       shape?: "diamond" | "square" | "circle" | "cross" | "diagonal";
       animation?: AnimationDefinition[];
       loop?: boolean;
+    }
+  | {
+      type: "apply-damage-per-condition";
+      subject: Subject;
+      conditionName: ConditionName;
+      damagePerStack: number;
+      radius?: number;
+      minRadius?: number;
+      shape?: AoeShape;
+    }
+  | {
+      type: "apply-heal-per-condition";
+      subject: Subject;
+      conditionName: ConditionName;
+      healPerStack: number;
+      radius?: number;
+      minRadius?: number;
+      shape?: AoeShape;
     };
 
 export type ConditionJson =
