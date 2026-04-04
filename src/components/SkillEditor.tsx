@@ -18,7 +18,7 @@ import type {
   ReactionSkillJson,
   FrameEvent,
 } from "@/types/actor";
-import { ChevronDown, GripVertical, ImagePlus, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, GripVertical, ImagePlus, Plus, Trash2, Wand2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -26,7 +26,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { IconPreview } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
 import { AoePreview } from "./AoePreview";
-import { PREDEFINED_ANIMATION_KEYS, type PresetAnimationKey } from "@/data/predefined-animations";
+import { PREDEFINED_ANIMATIONS, PREDEFINED_ANIMATION_KEYS, type PresetAnimationKey } from "@/data/predefined-animations";
 
 const AUDIO_IDS = ["footstep", "door", "chest", "chest_close", "ui_click", "sword_attack", "hurt"] as const;
 const AOE_SHAPES: AoeShape[] = ["diamond", "square", "circle", "cross", "diagonal"];
@@ -120,6 +120,58 @@ function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEff
           })}
           {filtered.length === 0 && (
             <p className="text-xs text-muted-foreground px-1">No effects match.</p>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function PresetAnimationPopover({ onSelect }: { onSelect: (frames: AnimationDefinition[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = filterPresetAnimations(query);
+
+  const handleSelect = (key: PresetAnimationKey) => {
+    onSelect(PREDEFINED_ANIMATIONS[key]);
+    setOpen(false);
+    setQuery("");
+  };
+
+  return (
+    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setQuery(""); }}>
+      <PopoverTrigger asChild>
+        <Button size="sm" variant="outline" className="h-6 text-xs">
+          <Wand2 className="h-3 w-3 mr-1" /> Preset
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-48 p-2"
+        align="end"
+        onOpenAutoFocus={(e) => { e.preventDefault(); inputRef.current?.focus(); }}
+      >
+        <Input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search presets…"
+          className="w-full mb-2"
+        />
+        <div className="max-h-64 overflow-y-auto space-y-1">
+          {filtered.length > 0 ? (
+            filtered.map((key) => (
+              <button
+                key={key}
+                className="w-full text-left text-xs px-2 py-1 rounded hover:bg-accent"
+                onClick={() => handleSelect(key)}
+              >
+                {key}
+              </button>
+            ))
+          ) : (
+            <p className="text-xs text-muted-foreground px-1">No presets match.</p>
           )}
         </div>
       </PopoverContent>
