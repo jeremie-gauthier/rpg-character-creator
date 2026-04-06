@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkillEditor } from "@/components/SkillEditor";
 import { SpriteSheetViewer } from "@/components/SpriteSheetViewer";
 import { createDefaultActor, createDefaultSkill, type Actor, type SkillConstraint, type SideEffect, type AnimationDefinition } from "@/types/actor";
-import { Download, Upload, Plus, ImagePlus, GripVertical } from "lucide-react";
+import { Download, Upload, Plus, ImagePlus, GripVertical, Gamepad2 } from "lucide-react";
 import { toast } from "sonner";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -213,6 +213,11 @@ const Index = () => {
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <h1 className="text-lg font-bold text-foreground tracking-tight">RPG Actor Builder</h1>
           <div className="flex gap-2">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
+              <a href="https://game.jergauth.fr/" target="_blank" rel="noopener noreferrer">
+                <Gamepad2 className="h-4 w-4 mr-1 text-primary" /> Play Game
+              </a>
+            </Button>
             <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={loadJson} />
             <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
               <Upload className="h-4 w-4 mr-1" /> Load JSON

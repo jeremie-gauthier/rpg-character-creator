@@ -2,10 +2,13 @@
 
 [![gh-pages CD](https://github.com/jeremie-gauthier/rpg-character-creator/actions/workflows/deploy.yml/badge.svg)](https://github.com/jeremie-gauthier/rpg-character-creator/actions)
 
-A specialized utility for designing and configuring character definitions for a personal RPG project.
+A specialized utility for designing and configuring character definitions for [personal RPG project](https://game.jergauth.fr/).
 
 ## Purpose
 This tool provides a guided UI to streamline the creation of complex character data, producing structured JSON output that is directly parsed and consumed by the game engine.
+
+## Play the Game
+You can play the game at [https://game.jergauth.fr/](https://game.jergauth.fr/).
 
 ## Key Features
 - **Visual Editor**: Configure actor stats, races, and jobs with real-time feedback.
