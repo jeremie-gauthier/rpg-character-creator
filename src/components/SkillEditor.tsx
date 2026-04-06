@@ -425,6 +425,7 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                           effect={se}
                           spriteSheet={spriteSheet}
                           onUploadImage={onUploadImage}
+                          resolveImage={resolveImage}
                           onChange={(v) => { const a = [...skill.sideEffects]; a[si] = v; update({ sideEffects: a }); }}
                           onDelete={() => update({ sideEffects: skill.sideEffects.filter((_, i) => i !== si) })}
                         />
@@ -577,6 +578,7 @@ function SortableSideEffectRow({
   effect,
   spriteSheet,
   onUploadImage,
+  resolveImage,
   onChange,
   onDelete,
 }: {
@@ -584,6 +586,7 @@ function SortableSideEffectRow({
   effect: SideEffect;
   spriteSheet: string;
   onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
+  resolveImage: (path: string) => string;
   onChange: (e: SideEffect) => void;
   onDelete: () => void;
 }) {
@@ -598,15 +601,16 @@ function SortableSideEffectRow({
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </div>
-      <SideEffectRow effect={effect} spriteSheet={spriteSheet} onUploadImage={onUploadImage} onChange={onChange} onDelete={onDelete} />
+      <SideEffectRow effect={effect} spriteSheet={spriteSheet} onUploadImage={onUploadImage} resolveImage={resolveImage} onChange={onChange} onDelete={onDelete} />
     </div>
   );
 }
 
-function SideEffectRow({ effect, spriteSheet, onUploadImage, onChange, onDelete }: {
+function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onChange, onDelete }: {
   effect: SideEffect;
   spriteSheet: string;
   onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
+  resolveImage: (path: string) => string;
   onChange: (e: SideEffect) => void;
   onDelete: () => void;
 }) {
@@ -759,6 +763,7 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, onChange, onDelete 
             reactionSkill={(effect.condition as Extract<ConditionJson, { name: "defensiveStance" | "offensiveStance" }>).reactionSkill}
             spriteSheet={spriteSheet}
             onUploadImage={onUploadImage}
+            resolveImage={resolveImage}
             onChange={(rs) => onChange({ ...effect, condition: { ...effect.condition, reactionSkill: rs } as ConditionJson })}
           />
         )}
@@ -946,11 +951,13 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, onChange, onDelete 
             projectile={effect.projectile}
             onUploadImage={onUploadImage}
             onChange={(p) => onChange({ ...effect, projectile: p })}
+            resolveImage={resolveImage}
           />
           <TileAnimationBlock
             animation={effect.tileAnimation}
             onUploadImage={onUploadImage}
             onChange={(a) => onChange({ ...effect, tileAnimation: a })}
+            resolveImage={resolveImage}
           />
         </div>
       )}
@@ -958,10 +965,11 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, onChange, onDelete 
   );
 }
 
-function ReactionSkillBlock({ reactionSkill, spriteSheet, onUploadImage, onChange }: {
+function ReactionSkillBlock({ reactionSkill, spriteSheet, onUploadImage, resolveImage, onChange }: {
   reactionSkill?: ReactionSkillJson;
   spriteSheet: string;
   onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
+  resolveImage: (path: string) => string;
   onChange: (rs: ReactionSkillJson) => void;
 }) {
   const rs: ReactionSkillJson = reactionSkill || { id: "", name: "", reactsTo: "enemies", sideEffects: [] };
@@ -1042,6 +1050,8 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onUploadImage, onChang
                 id={String(si)}
                 effect={se}
                 spriteSheet={spriteSheet}
+                onUploadImage={onUploadImage}
+                resolveImage={resolveImage}
                 onChange={(v) => { const a = [...rs.sideEffects]; a[si] = v; update({ sideEffects: a }); }}
                 onDelete={() => update({ sideEffects: rs.sideEffects.filter((_, i) => i !== si) })}
               />
@@ -1135,10 +1145,12 @@ function ProjectileBlock({
   projectile,
   onUploadImage,
   onChange,
+  resolveImage,
 }: {
   projectile: ProjectileJsonDefinition | undefined;
   onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
   onChange: (p: ProjectileJsonDefinition | undefined) => void;
+  resolveImage: (path: string) => string;
 }) {
   if (!projectile) {
     return (
@@ -1226,7 +1238,7 @@ function ProjectileBlock({
       <AnimationFramesSection
         animation={projectile.frames}
         loop={!!projectile.loop}
-        spriteSheet={projectile.sheetPath}
+        spriteSheet={resolveImage(projectile.sheetPath)}
         width={projectile.frameWidth}
         height={projectile.frameHeight}
         onChange={(patch) => {
@@ -1242,10 +1254,12 @@ function TileAnimationBlock({
   animation,
   onUploadImage,
   onChange,
+  resolveImage,
 }: {
   animation: TileAnimationJsonDefinition | undefined;
   onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
   onChange: (a: TileAnimationJsonDefinition | undefined) => void;
+  resolveImage: (path: string) => string;
 }) {
   if (!animation) {
     return (
@@ -1315,7 +1329,7 @@ function TileAnimationBlock({
       <AnimationFramesSection
         animation={animation.frames}
         loop={false}
-        spriteSheet={animation.sheetPath}
+        spriteSheet={resolveImage(animation.sheetPath)}
         width={animation.frameWidth}
         height={animation.frameHeight}
         onChange={(patch) => {
