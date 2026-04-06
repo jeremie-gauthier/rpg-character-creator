@@ -1,6 +1,6 @@
 export interface FrameEvent {
-  type: "play_audio";
-  audioId:
+  type: "play_audio" | "launch_projectile" | "target_hurt";
+  audioId?:
     | "footstep"
     | "door"
     | "chest"
@@ -14,6 +14,22 @@ export interface AnimationDefinition {
   columnIdx: number;
   frameDurationMs: number;
   frameEvents?: FrameEvent[];
+}
+
+export interface ProjectileJsonDefinition {
+  sheetPath: string;
+  frameWidth: number;
+  frameHeight: number;
+  frames: AnimationDefinition[];
+  travelDurationMs: number;
+  loop?: boolean;
+}
+
+export interface TileAnimationJsonDefinition {
+  sheetPath: string;
+  frameWidth: number;
+  frameHeight: number;
+  frames: AnimationDefinition[];
 }
 
 export type Subject = "caster" | "target";
@@ -39,6 +55,8 @@ export type SideEffect =
       shape?: AoeShape;
       animation?: AnimationDefinition[];
       loop?: boolean;
+      projectile?: ProjectileJsonDefinition;
+      tileAnimation?: TileAnimationJsonDefinition;
     }
   | {
       type: "apply-heal";

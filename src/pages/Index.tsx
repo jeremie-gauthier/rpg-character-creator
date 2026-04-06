@@ -96,6 +96,23 @@ const Index = () => {
       return cleaned;
     };
 
+    const cleanAnimationDefinition = (a: AnimationDefinition): Record<string, unknown> => {
+      const cleaned: Record<string, unknown> = {
+        columnIdx: a.columnIdx,
+        frameDurationMs: a.frameDurationMs,
+      };
+
+      if (a.frameEvents && a.frameEvents.length > 0) {
+        cleaned.frameEvents = a.frameEvents.map((ev) => {
+          if (ev.type === "play_audio") return ev;
+          // For other types, only include the type field
+          return { type: ev.type };
+        });
+      }
+
+      return cleaned;
+    };
+
     const cleanSideEffect = (se: SideEffect): Record<string, unknown> => {
       const cleaned = { ...se } as Record<string, unknown>;
       
@@ -104,13 +121,7 @@ const Index = () => {
         if (se.animation.length === 0) {
           delete cleaned.animation;
         } else {
-          cleaned.animation = se.animation.map((a: AnimationDefinition) => {
-            if (a.frameEvents && a.frameEvents.length === 0) {
-              const { frameEvents, ...aRest } = a;
-              return aRest;
-            }
-            return a;
-          });
+          cleaned.animation = se.animation.map(cleanAnimationDefinition);
         }
       }
       
@@ -123,6 +134,23 @@ const Index = () => {
       if ("radius" in se && se.radius === 0) delete cleaned.radius;
       if ("minRadius" in se && se.minRadius === 0) delete cleaned.minRadius;
       if ("shape" in se && se.shape === "diamond") delete cleaned.shape;
+
+      // Clean up projectile if present
+      if ("projectile" in se && se.projectile) {
+        cleaned.projectile = {
+          ...se.projectile,
+          frames: se.projectile.frames.map(cleanAnimationDefinition)
+        };
+        if (se.projectile.loop === false) delete (cleaned.projectile as any).loop;
+      }
+
+      // Clean up tileAnimation if present
+      if ("tileAnimation" in se && se.tileAnimation) {
+        cleaned.tileAnimation = {
+          ...se.tileAnimation,
+          frames: se.tileAnimation.frames.map(cleanAnimationDefinition)
+        };
+      }
 
       // Recursively clean reactionSkill if present in condition
       if (se.type === "apply-condition" && se.condition && (se.condition.name === "defensiveStance" || se.condition.name === "offensiveStance") && se.condition.reactionSkill) {

@@ -7,14 +7,15 @@ interface AnimationPreviewProps {
   spriteSheetSrc: string;
   frames: AnimationDefinition[];
   loop?: boolean;
+  width?: number;
+  height?: number;
 }
 
-export function AnimationPreview({ spriteSheetSrc, frames, loop = false }: AnimationPreviewProps) {
+export function AnimationPreview({ spriteSheetSrc, frames, loop = false, width = 32, height = 32 }: AnimationPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [playing, setPlaying] = useState(false);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const playingRef = useRef(false);
-  const SPRITE_SIZE = 32;
   const SCALE = 3;
 
   useEffect(() => {
@@ -29,13 +30,13 @@ export function AnimationPreview({ spriteSheetSrc, frames, loop = false }: Anima
     if (!img || !canvasRef.current) return;
     const ctx = canvasRef.current.getContext("2d")!;
     ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, SPRITE_SIZE * SCALE, SPRITE_SIZE * SCALE);
+    ctx.clearRect(0, 0, width * SCALE, height * SCALE);
     ctx.drawImage(
       img,
-      colIdx * SPRITE_SIZE, 0, SPRITE_SIZE, SPRITE_SIZE,
-      0, 0, SPRITE_SIZE * SCALE, SPRITE_SIZE * SCALE
+      colIdx * width, 0, width, height,
+      0, 0, width * SCALE, height * SCALE
     );
-  }, [img]);
+  }, [img, width, height]);
 
   useEffect(() => {
     if (!playing || !img || frames.length === 0) return;
@@ -70,8 +71,8 @@ export function AnimationPreview({ spriteSheetSrc, frames, loop = false }: Anima
     <div className="flex items-center gap-2">
       <canvas
         ref={canvasRef}
-        width={SPRITE_SIZE * SCALE}
-        height={SPRITE_SIZE * SCALE}
+        width={width * SCALE}
+        height={height * SCALE}
         className="border border-border rounded bg-black/80"
         style={{ imageRendering: "pixelated" }}
       />

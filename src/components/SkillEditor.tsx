@@ -184,11 +184,15 @@ function AnimationFramesSection({
   animation,
   loop,
   spriteSheet,
+  width,
+  height,
   onChange,
 }: {
   animation: AnimationDefinition[];
   loop: boolean;
   spriteSheet: string | undefined;
+  width?: number;
+  height?: number;
   onChange: (patch: { animation: AnimationDefinition[] } | { loop: boolean }) => void;
 }) {
   return (
@@ -228,7 +232,13 @@ function AnimationFramesSection({
       ))}
 
       {animation.length > 0 && (
-        <AnimationPreview spriteSheetSrc={spriteSheet} frames={animation} loop={loop} />
+        <AnimationPreview
+          spriteSheetSrc={spriteSheet || ""}
+          frames={animation}
+          loop={loop}
+          width={width}
+          height={height}
+        />
       )}
     </div>
   );
@@ -414,6 +424,7 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                           id={String(si)}
                           effect={se}
                           spriteSheet={spriteSheet}
+                          onUploadImage={onUploadImage}
                           onChange={(v) => { const a = [...skill.sideEffects]; a[si] = v; update({ sideEffects: a }); }}
                           onDelete={() => update({ sideEffects: skill.sideEffects.filter((_, i) => i !== si) })}
                         />
@@ -565,12 +576,14 @@ function SortableSideEffectRow({
   id,
   effect,
   spriteSheet,
+  onUploadImage,
   onChange,
   onDelete,
 }: {
   id: string;
   effect: SideEffect;
   spriteSheet: string;
+  onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
   onChange: (e: SideEffect) => void;
   onDelete: () => void;
 }) {
@@ -585,12 +598,18 @@ function SortableSideEffectRow({
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </div>
-      <SideEffectRow effect={effect} spriteSheet={spriteSheet} onChange={onChange} onDelete={onDelete} />
+      <SideEffectRow effect={effect} spriteSheet={spriteSheet} onUploadImage={onUploadImage} onChange={onChange} onDelete={onDelete} />
     </div>
   );
 }
 
-function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: SideEffect; spriteSheet: string; onChange: (e: SideEffect) => void; onDelete: () => void }) {
+function SideEffectRow({ effect, spriteSheet, onUploadImage, onChange, onDelete }: {
+  effect: SideEffect;
+  spriteSheet: string;
+  onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
+  onChange: (e: SideEffect) => void;
+  onDelete: () => void;
+}) {
   if (effect.type === "apply-condition-cleanse") {
     const radius = effect.radius ?? 0;
     const minRadius = effect.minRadius ?? 0;
@@ -739,6 +758,7 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
           <ReactionSkillBlock
             reactionSkill={(effect.condition as Extract<ConditionJson, { name: "defensiveStance" | "offensiveStance" }>).reactionSkill}
             spriteSheet={spriteSheet}
+            onUploadImage={onUploadImage}
             onChange={(rs) => onChange({ ...effect, condition: { ...effect.condition, reactionSkill: rs } as ConditionJson })}
           />
         )}
@@ -919,13 +939,29 @@ function SideEffectRow({ effect, spriteSheet, onChange, onDelete }: { effect: Si
         spriteSheet={spriteSheet}
         onChange={(patch) => onChange({ ...effect, ...patch })}
       />
+
+      {isDamage && (
+        <div className="space-y-2">
+          <ProjectileBlock
+            projectile={effect.projectile}
+            onUploadImage={onUploadImage}
+            onChange={(p) => onChange({ ...effect, projectile: p })}
+          />
+          <TileAnimationBlock
+            animation={effect.tileAnimation}
+            onUploadImage={onUploadImage}
+            onChange={(a) => onChange({ ...effect, tileAnimation: a })}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
-function ReactionSkillBlock({ reactionSkill, spriteSheet, onChange }: {
+function ReactionSkillBlock({ reactionSkill, spriteSheet, onUploadImage, onChange }: {
   reactionSkill?: ReactionSkillJson;
   spriteSheet: string;
+  onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
   onChange: (rs: ReactionSkillJson) => void;
 }) {
   const rs: ReactionSkillJson = reactionSkill || { id: "", name: "", reactsTo: "enemies", sideEffects: [] };
@@ -1018,6 +1054,12 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onChange }: {
 }
 
 function AnimationFrameRow({ frame, onChange, onDelete }: { frame: AnimationDefinition; onChange: (f: AnimationDefinition) => void; onDelete: () => void }) {
+  const addEvent = (type: FrameEvent["type"]) => {
+    const newEvent: FrameEvent = { type };
+    if (type === "play_audio") newEvent.audioId = "footstep";
+    onChange({ ...frame, frameEvents: [...(frame.frameEvents || []), newEvent] });
+  };
+
   return (
     <div className="bg-background rounded p-2 space-y-1">
       <div className="flex items-center gap-2">
@@ -1025,27 +1067,261 @@ function AnimationFrameRow({ frame, onChange, onDelete }: { frame: AnimationDefi
         <Input type="number" className="h-7 w-14 text-xs" value={frame.columnIdx} onChange={(e) => onChange({ ...frame, columnIdx: parseInt(e.target.value) || 0 })} />
         <Label className="text-xs">ms</Label>
         <Input type="number" className="h-7 w-16 text-xs" value={frame.frameDurationMs} onChange={(e) => onChange({ ...frame, frameDurationMs: parseInt(e.target.value) || 0 })} />
-        <Button size="sm" variant="outline" className="h-6 text-xs ml-auto" onClick={() => onChange({ ...frame, frameEvents: [...(frame.frameEvents || []), { type: "play_audio", audioId: "footstep" }] })}>
-          <Plus className="h-3 w-3 mr-1" /> Event
-        </Button>
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        <div className="flex items-center gap-1 ml-auto">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" className="h-6 text-xs">
+                <Plus className="h-3 w-3 mr-1" /> Event
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-1" align="end">
+              <div className="flex flex-col gap-1">
+                <Button variant="ghost" size="sm" className="h-8 justify-start text-xs" onClick={() => addEvent("play_audio")}>Audio</Button>
+                <Button variant="ghost" size="sm" className="h-8 justify-start text-xs" onClick={() => addEvent("launch_projectile")}>Launch Projectile</Button>
+                <Button variant="ghost" size="sm" className="h-8 justify-start text-xs" onClick={() => addEvent("target_hurt")}>Target Hurt</Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        </div>
       </div>
       {(frame.frameEvents || []).map((ev, ei) => (
-        <div key={ei} className="flex items-center gap-2 pl-4">
-          <span className="text-xs text-muted-foreground">Audio:</span>
-          <Select value={ev.audioId} onValueChange={(v) => {
-            const events = [...(frame.frameEvents || [])];
-            events[ei] = { ...ev, audioId: v as FrameEvent["audioId"] };
-            onChange({ ...frame, frameEvents: events });
-          }}>
-            <SelectTrigger className="h-7 text-xs w-32"><SelectValue /></SelectTrigger>
+        <div key={ei} className="flex items-center gap-2 pl-4 bg-muted/30 rounded py-1 pr-1">
+          <Select
+            value={ev.type}
+            onValueChange={(v) => {
+              const events = [...(frame.frameEvents || [])];
+              const newType = v as FrameEvent["type"];
+              const newEv: FrameEvent = { type: newType };
+              if (newType === "play_audio") newEv.audioId = "footstep";
+              events[ei] = newEv;
+              onChange({ ...frame, frameEvents: events });
+            }}
+          >
+            <SelectTrigger className="h-7 text-[10px] w-28 shrink-0"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {AUDIO_IDS.map((id) => <SelectItem key={id} value={id}>{id}</SelectItem>)}
+              <SelectItem value="play_audio">play_audio</SelectItem>
+              <SelectItem value="launch_projectile">launch_projectile</SelectItem>
+              <SelectItem value="target_hurt">target_hurt</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onChange({ ...frame, frameEvents: (frame.frameEvents || []).filter((_, i) => i !== ei) })}><Trash2 className="h-3 w-3" /></Button>
+
+          {ev.type === "play_audio" && (
+            <Select
+              value={ev.audioId}
+              onValueChange={(v) => {
+                const events = [...(frame.frameEvents || [])];
+                events[ei] = { ...ev, audioId: v as FrameEvent["audioId"] };
+                onChange({ ...frame, frameEvents: events });
+              }}
+            >
+              <SelectTrigger className="h-7 text-[10px] flex-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {AUDIO_IDS.map((id) => <SelectItem key={id} value={id}>{id}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+
+          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => onChange({ ...frame, frameEvents: (frame.frameEvents || []).filter((_, i) => i !== ei) })}>
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
       ))}
+    </div>
+  );
+}
+
+function ProjectileBlock({
+  projectile,
+  onUploadImage,
+  onChange,
+}: {
+  projectile: ProjectileJsonDefinition | undefined;
+  onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
+  onChange: (p: ProjectileJsonDefinition | undefined) => void;
+}) {
+  if (!projectile) {
+    return (
+      <div className="bg-background rounded p-3 border border-dashed border-border flex justify-center">
+        <Button size="sm" variant="outline" onClick={() => onChange({
+          sheetPath: "",
+          frameWidth: 32,
+          frameHeight: 32,
+          frames: [],
+          travelDurationMs: 500
+        })}>
+          <Plus className="h-3 w-3 mr-1" /> Add Projectile
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-background rounded p-3 space-y-2 border border-border">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-foreground">Projectile</span>
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onChange(undefined)}>
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div>
+          <Label className="text-[10px]">Sheet Path</Label>
+          <div className="flex gap-1">
+            <Input
+              className="h-7 text-xs"
+              value={projectile.sheetPath}
+              onChange={(e) => onChange({ ...projectile, sheetPath: e.target.value })}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => onUploadImage(projectile.sheetPath, (path) => onChange({ ...projectile, sheetPath: path }))}
+            >
+              <ImagePlus className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          <div>
+            <Label className="text-[10px]">W</Label>
+            <Input
+              type="number"
+              className="h-7 text-xs"
+              value={projectile.frameWidth}
+              onChange={(e) => onChange({ ...projectile, frameWidth: parseInt(e.target.value) || 0 })}
+            />
+          </div>
+          <div>
+            <Label className="text-[10px]">H</Label>
+            <Input
+              type="number"
+              className="h-7 text-xs"
+              value={projectile.frameHeight}
+              onChange={(e) => onChange({ ...projectile, frameHeight: parseInt(e.target.value) || 0 })}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Label className="text-[10px]">Travel (ms)</Label>
+        <Input
+          type="number"
+          className="h-7 w-20 text-xs"
+          value={projectile.travelDurationMs}
+          onChange={(e) => onChange({ ...projectile, travelDurationMs: parseInt(e.target.value) || 0 })}
+        />
+        <div className="flex items-center gap-1">
+          <Checkbox
+            checked={!!projectile.loop}
+            onCheckedChange={(v) => onChange({ ...projectile, loop: !!v })}
+          />
+          <Label className="text-[10px]">Loop</Label>
+        </div>
+      </div>
+
+      <AnimationFramesSection
+        animation={projectile.frames}
+        loop={!!projectile.loop}
+        spriteSheet={projectile.sheetPath}
+        width={projectile.frameWidth}
+        height={projectile.frameHeight}
+        onChange={(patch) => {
+          if ("animation" in patch) onChange({ ...projectile, frames: patch.animation });
+          if ("loop" in patch) onChange({ ...projectile, loop: patch.loop });
+        }}
+      />
+    </div>
+  );
+}
+
+function TileAnimationBlock({
+  animation,
+  onUploadImage,
+  onChange,
+}: {
+  animation: TileAnimationJsonDefinition | undefined;
+  onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
+  onChange: (a: TileAnimationJsonDefinition | undefined) => void;
+}) {
+  if (!animation) {
+    return (
+      <div className="bg-background rounded p-3 border border-dashed border-border flex justify-center">
+        <Button size="sm" variant="outline" onClick={() => onChange({
+          sheetPath: "",
+          frameWidth: 32,
+          frameHeight: 32,
+          frames: []
+        })}>
+          <Plus className="h-3 w-3 mr-1" /> Add Tile Animation
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-background rounded p-3 space-y-2 border border-border">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-foreground">Tile Animation</span>
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onChange(undefined)}>
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div>
+          <Label className="text-[10px]">Sheet Path</Label>
+          <div className="flex gap-1">
+            <Input
+              className="h-7 text-xs"
+              value={animation.sheetPath}
+              onChange={(e) => onChange({ ...animation, sheetPath: e.target.value })}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => onUploadImage(animation.sheetPath, (path) => onChange({ ...animation, sheetPath: path }))}
+            >
+              <ImagePlus className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          <div>
+            <Label className="text-[10px]">W</Label>
+            <Input
+              type="number"
+              className="h-7 text-xs"
+              value={animation.frameWidth}
+              onChange={(e) => onChange({ ...animation, frameWidth: parseInt(e.target.value) || 0 })}
+            />
+          </div>
+          <div>
+            <Label className="text-[10px]">H</Label>
+            <Input
+              type="number"
+              className="h-7 text-xs"
+              value={animation.frameHeight}
+              onChange={(e) => onChange({ ...animation, frameHeight: parseInt(e.target.value) || 0 })}
+            />
+          </div>
+        </div>
+      </div>
+
+      <AnimationFramesSection
+        animation={animation.frames}
+        loop={false}
+        spriteSheet={animation.sheetPath}
+        width={animation.frameWidth}
+        height={animation.frameHeight}
+        onChange={(patch) => {
+          if ("animation" in patch) onChange({ ...animation, frames: patch.animation });
+        }}
+      />
     </div>
   );
 }
