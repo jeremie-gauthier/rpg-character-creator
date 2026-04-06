@@ -1,25 +1,76 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkillEditor } from "@/components/SkillEditor";
 import { SpriteSheetViewer } from "@/components/SpriteSheetViewer";
-import { createDefaultActor, createDefaultSkill, type Actor, type SkillConstraint, type SideEffect, type AnimationDefinition } from "@/types/actor";
-import { Download, Upload, Plus, ImagePlus, GripVertical, Gamepad2, Save } from "lucide-react";
+import {
+  createDefaultActor,
+  createDefaultSkill,
+  type Actor,
+  type SkillConstraint,
+  type SideEffect,
+  type AnimationDefinition,
+} from "@/types/actor";
+import {
+  Upload,
+  Plus,
+  ImagePlus,
+  GripVertical,
+  Gamepad2,
+  Save,
+  FolderOpen,
+} from "lucide-react";
 import { toast } from "sonner";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ActorLibrary } from "@/components/ActorLibrary";
-import { verifyPermission, saveToLibrary } from "@/lib/storage";
+import {
+  verifyPermission,
+  saveToLibrary,
+  saveHandle,
+  getAllHandles,
+} from "@/lib/storage";
 
 let nextSkillUid = 1;
 const genUid = () => `skill-${nextSkillUid++}`;
 
-function SortableSkillItem({ id, children }: { id: string; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+function SortableSkillItem({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
   return (
     <div ref={setNodeRef} style={style} className="relative group">
       <div
@@ -44,7 +95,9 @@ const prepareActorForExport = (actor: Actor) => {
     return cleaned;
   };
 
-  const cleanAnimationDefinition = (a: AnimationDefinition): Record<string, unknown> => {
+  const cleanAnimationDefinition = (
+    a: AnimationDefinition,
+  ): Record<string, unknown> => {
     const cleaned: Record<string, unknown> = {
       columnIdx: a.columnIdx,
       frameDurationMs: a.frameDurationMs,
@@ -62,7 +115,7 @@ const prepareActorForExport = (actor: Actor) => {
 
   const cleanSideEffect = (se: SideEffect): Record<string, unknown> => {
     const cleaned = { ...se } as Record<string, unknown>;
-    
+
     if ("animation" in se && se.animation) {
       if (se.animation.length === 0) {
         delete cleaned.animation;
@@ -70,11 +123,11 @@ const prepareActorForExport = (actor: Actor) => {
         cleaned.animation = se.animation.map(cleanAnimationDefinition);
       }
     }
-    
+
     if ("loop" in se && (se.loop === false || se.loop === undefined)) {
       delete cleaned.loop;
     }
-    
+
     if ("radius" in se && se.radius === 0) delete cleaned.radius;
     if ("minRadius" in se && se.minRadius === 0) delete cleaned.minRadius;
     if ("shape" in se && se.shape === "diamond") delete cleaned.shape;
@@ -82,26 +135,38 @@ const prepareActorForExport = (actor: Actor) => {
     if ("projectile" in se && se.projectile) {
       cleaned.projectile = {
         ...se.projectile,
-        frames: se.projectile.frames.map(cleanAnimationDefinition)
+        frames: se.projectile.frames.map(cleanAnimationDefinition),
       };
-      if (se.projectile.loop === false) delete (cleaned.projectile as any).loop;
+      if (se.projectile.loop === false) {
+        const p = { ...se.projectile } as Record<string, unknown>;
+        delete p.loop;
+        cleaned.projectile = p;
+      }
     }
 
     if ("tileAnimation" in se && se.tileAnimation) {
       cleaned.tileAnimation = {
         ...se.tileAnimation,
-        frames: se.tileAnimation.frames.map(cleanAnimationDefinition)
+        frames: se.tileAnimation.frames.map(cleanAnimationDefinition),
       };
     }
 
-    if (se.type === "apply-condition" && se.condition && (se.condition.name === "defensiveStance" || se.condition.name === "offensiveStance") && se.condition.reactionSkill) {
+    if (
+      se.type === "apply-condition" &&
+      se.condition &&
+      (se.condition.name === "defensiveStance" ||
+        se.condition.name === "offensiveStance") &&
+      se.condition.reactionSkill
+    ) {
       cleaned.condition = {
         ...se.condition,
         reactionSkill: {
           ...se.condition.reactionSkill,
-          constraints: se.condition.reactionSkill.constraints?.map(cleanConstraint),
-          sideEffects: se.condition.reactionSkill.sideEffects?.map(cleanSideEffect)
-        }
+          constraints:
+            se.condition.reactionSkill.constraints?.map(cleanConstraint),
+          sideEffects:
+            se.condition.reactionSkill.sideEffects?.map(cleanSideEffect),
+        },
       };
     }
 
@@ -120,15 +185,62 @@ const prepareActorForExport = (actor: Actor) => {
 
 const Index = () => {
   const [actor, setActor] = useState<Actor>(createDefaultActor());
-  const [currentHandle, setCurrentHandle] = useState<FileSystemFileHandle | null>(null);
+  const [currentHandle, setCurrentHandle] =
+    useState<FileSystemFileHandle | null>(null);
   const [currentLibraryId, setCurrentLibraryId] = useState<string | null>(null);
   const [skillIds, setSkillIds] = useState<string[]>([genUid()]);
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
+  const [handleMap, setHandleMap] = useState<
+    Record<string, FileSystemFileHandle>
+  >({});
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Load handles from storage on mount
+  useEffect(() => {
+    getAllHandles().then((handles) => {
+      setHandleMap(handles as Record<string, FileSystemFileHandle>);
+    });
+  }, []);
+
+  // Automatically resolve missing images from handles (if permission is already granted)
+  useEffect(() => {
+    const pathsToResolve = new Set<string>();
+    if (actor.spriteSheet) pathsToResolve.add(actor.spriteSheet);
+    actor.skills.forEach((skill) => {
+      if (skill.icon) pathsToResolve.add(skill.icon);
+      skill.sideEffects.forEach((se) => {
+        if ("projectile" in se && se.projectile?.sheetPath) {
+          pathsToResolve.add(se.projectile.sheetPath);
+        }
+        if ("tileAnimation" in se && se.tileAnimation?.sheetPath) {
+          pathsToResolve.add(se.tileAnimation.sheetPath);
+        }
+      });
+    });
+
+    pathsToResolve.forEach(async (rawPath) => {
+      const path = rawPath.replace("file::", "");
+      if (imageMap[path] || !handleMap[path]) return;
+
+      try {
+        const handle = handleMap[path];
+        // Only resolve if permission is already granted (non-interactive in useEffect)
+        if ((await handle.queryPermission({ mode: "read" })) === "granted") {
+          const file = await handle.getFile();
+          const url = URL.createObjectURL(file);
+          setImageMap((prev) => ({ ...prev, [path]: url }));
+        }
+      } catch (err) {
+        console.error(`Failed to resolve image for path: ${path}`, err);
+      }
+    });
+  }, [actor, handleMap, imageMap]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -137,31 +249,134 @@ const Index = () => {
       const oldIndex = skillIds.indexOf(active.id as string);
       const newIndex = skillIds.indexOf(over.id as string);
       setSkillIds(arrayMove(skillIds, oldIndex, newIndex));
-      setActor((a) => ({ ...a, skills: arrayMove(a.skills, oldIndex, newIndex) }));
+      setActor((a) => ({
+        ...a,
+        skills: arrayMove(a.skills, oldIndex, newIndex),
+      }));
     }
   };
 
-  const updateActor = (partial: Partial<Actor>) => setActor((a) => ({ ...a, ...partial }));
+  const updateActor = (partial: Partial<Actor>) =>
+    setActor((a) => ({ ...a, ...partial }));
 
-  const resolveImage = useCallback((path: string) => imageMap[path] || path, [imageMap]);
+  const resolveImage = useCallback(
+    (path: string) => {
+      if (!path) return "";
 
-  const uploadImage = (pathKey: string, onPath?: (path: string) => void) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
-        const fakePath = pathKey || `/${file.name}`;
-        setImageMap((m) => ({ ...m, [fakePath]: dataUrl }));
-        onPath?.(fakePath);
-      };
-      reader.readAsDataURL(file);
-    };
-    input.click();
+      // Remove file:: prefix if present for imageMap lookup
+      const cleanPath = path.startsWith("file::")
+        ? path.replace("file::", "")
+        : path;
+
+      if (imageMap[cleanPath]) return imageMap[cleanPath];
+
+      // If it's a blob or data URL, return it as is
+      if (path.startsWith("blob:") || path.startsWith("data:")) {
+        return path;
+      }
+
+      // Handle deployment base URL for absolute local assets
+      if (cleanPath.startsWith("/")) {
+        const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+        return `${base}${cleanPath}`;
+      }
+
+      return path;
+    },
+    [imageMap],
+  );
+
+  const uploadImage = async (
+    pathKey: string,
+    onPath?: (path: string) => void,
+  ) => {
+    try {
+      if (!("showOpenFilePicker" in window)) {
+        // Fallback to traditional input if needed
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.onchange = (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const dataUrl = ev.target?.result as string;
+            const fakePath = pathKey || `/${file.name}`;
+            setImageMap((m) => ({ ...m, [fakePath]: dataUrl }));
+            onPath?.(fakePath);
+          };
+          reader.readAsDataURL(file);
+        };
+        input.click();
+        return;
+      }
+
+      const [handle] = await window.showOpenFilePicker({
+        types: [
+          {
+            description: "Images",
+            accept: { "image/*": [".png", ".jpg", ".jpeg", ".webp", ".svg"] },
+          },
+        ],
+      });
+
+      const file = await handle.getFile();
+      const url = URL.createObjectURL(file);
+      const fakePath = pathKey || `/${file.name}`;
+
+      setImageMap((m) => ({ ...m, [fakePath]: url }));
+      setHandleMap((m) => ({ ...m, [fakePath]: handle }));
+      await saveHandle(fakePath, handle);
+      onPath?.(fakePath);
+      toast.success("Image uploaded and path memorized!");
+    } catch (err) {
+      if ((err as Error).name === "AbortError") return;
+      console.error(err);
+      toast.error("Failed to upload image");
+    }
+  };
+
+  const uploadDirectory = async () => {
+    try {
+      if (!("showDirectoryPicker" in window)) {
+        toast.error("Directory picker is not supported in this browser.");
+        return;
+      }
+
+      const dirHandle = await window.showDirectoryPicker();
+      let count = 0;
+
+      async function scan(handle: FileSystemDirectoryHandle, path: string) {
+        for await (const entry of handle.values()) {
+          const entryPath = `${path}/${entry.name}`;
+          if (
+            entry.kind === "file" &&
+            /\.(png|jpg|jpeg|webp|svg)$/i.test(entry.name)
+          ) {
+            const fileHandle = entry as FileSystemFileHandle;
+            setHandleMap((m) => ({ ...m, [entryPath]: fileHandle }));
+            await saveHandle(entryPath, fileHandle);
+
+            // Resolve immediately
+            const file = await fileHandle.getFile();
+            const url = URL.createObjectURL(file);
+            setImageMap((m) => ({ ...m, [entryPath]: url }));
+
+            count++;
+          } else if (entry.kind === "directory") {
+            await scan(entry as FileSystemDirectoryHandle, entryPath);
+          }
+        }
+      }
+
+      await scan(dirHandle, "");
+      toast.success(`Scanned directory and memorized ${count} images!`);
+    } catch (err) {
+      if ((err as Error).name === "AbortError") return;
+      console.error(err);
+      toast.error("Failed to scan directory");
+    }
   };
 
   const validateActor = (a: Actor) => {
@@ -200,7 +415,7 @@ const Index = () => {
             name: `${actor.race}-${actor.job}`,
             handle: currentHandle,
             actor,
-            lastModified: Date.now()
+            lastModified: Date.now(),
           });
         }
 
@@ -219,7 +434,9 @@ const Index = () => {
     if (!validateActor(actor)) return;
 
     const clean = prepareActorForExport(actor);
-    const blob = new Blob([JSON.stringify(clean, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(clean, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -252,7 +469,11 @@ const Index = () => {
     e.target.value = "";
   };
 
-  const handleLoadFromLibrary = (data: Actor, id: string, handle?: FileSystemFileHandle) => {
+  const handleLoadFromLibrary = (
+    data: Actor,
+    id: string,
+    handle?: FileSystemFileHandle,
+  ) => {
     setActor(data);
     setCurrentLibraryId(id);
     setCurrentHandle(handle || null);
@@ -264,24 +485,59 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <h1 className="text-lg font-bold text-foreground tracking-tight">RPG Actor Builder</h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight">
+            RPG Actor Builder
+          </h1>
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
-              <a href="https://game.jergauth.fr/" target="_blank" rel="noopener noreferrer">
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="hidden sm:flex"
+            >
+              <a
+                href="https://game.jergauth.fr/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Gamepad2 className="h-4 w-4 mr-1 text-primary" /> Play Game
               </a>
             </Button>
-            
+
             <ActorLibrary onLoadActor={handleLoadFromLibrary} />
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={uploadDirectory}
+              title="Scan local directory to resolve image paths"
+            >
+              <FolderOpen className="h-4 w-4 mr-1" /> Scan Assets
+            </Button>
 
             <div className="w-[1px] h-8 bg-border mx-1" />
 
-            <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={loadJson} />
-            <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={loadJson}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileRef.current?.click()}
+            >
               <Upload className="h-4 w-4 mr-1" /> Load
             </Button>
-            <Button size="sm" onClick={saveActor} className={currentHandle ? "bg-primary" : "bg-muted-foreground"}>
-              <Save className="h-4 w-4 mr-1" /> {currentHandle ? "Save" : "Export"}
+            <Button
+              size="sm"
+              onClick={saveActor}
+              className={currentHandle ? "bg-primary" : "bg-muted-foreground"}
+            >
+              <Save className="h-4 w-4 mr-1" />{" "}
+              {currentHandle ? "Save" : "Export"}
             </Button>
           </div>
         </div>
@@ -301,23 +557,39 @@ const Index = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Race</Label>
-                <Input value={actor.race} onChange={(e) => updateActor({ race: e.target.value })} placeholder="HUMAN" />
+                <Input
+                  value={actor.race}
+                  onChange={(e) => updateActor({ race: e.target.value })}
+                  placeholder="HUMAN"
+                />
               </div>
               <div>
                 <Label>Job</Label>
-                <Input value={actor.job} onChange={(e) => updateActor({ job: e.target.value })} placeholder="WARRIOR" />
+                <Input
+                  value={actor.job}
+                  onChange={(e) => updateActor({ job: e.target.value })}
+                  placeholder="WARRIOR"
+                />
               </div>
             </div>
             <div>
               <Label>Sprite Sheet Path</Label>
               <div className="flex gap-2">
-                <Input value={actor.spriteSheet} onChange={(e) => updateActor({ spriteSheet: e.target.value })} placeholder="/actors/heroes/warrior/warrior.png" className="flex-1" />
+                <Input
+                  value={actor.spriteSheet}
+                  onChange={(e) => updateActor({ spriteSheet: e.target.value })}
+                  placeholder="/actors/heroes/warrior/warrior.png"
+                  className="flex-1"
+                />
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => uploadImage(actor.spriteSheet, (path) => {
-                    if (!actor.spriteSheet) updateActor({ spriteSheet: path });
-                  })}
+                  onClick={() =>
+                    uploadImage(actor.spriteSheet, (path) => {
+                      if (!actor.spriteSheet)
+                        updateActor({ spriteSheet: path });
+                    })
+                  }
                 >
                   <ImagePlus className="h-4 w-4 mr-1" /> Upload
                 </Button>
@@ -326,14 +598,41 @@ const Index = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Health Points Max</Label>
-                <Input type="number" min={1} value={actor.healthPointsMax} onChange={(e) => updateActor({ healthPointsMax: Math.max(1, parseInt(e.target.value) || 1) })} />
+                <Input
+                  type="number"
+                  min={1}
+                  value={actor.healthPointsMax}
+                  onChange={(e) =>
+                    updateActor({
+                      healthPointsMax: Math.max(
+                        1,
+                        parseInt(e.target.value) || 1,
+                      ),
+                    })
+                  }
+                />
               </div>
               <div>
                 <Label>Action Points Max</Label>
-                <Input type="number" min={0} value={actor.actionPointsMax} onChange={(e) => updateActor({ actionPointsMax: Math.max(0, parseInt(e.target.value) || 0) })} />
+                <Input
+                  type="number"
+                  min={0}
+                  value={actor.actionPointsMax}
+                  onChange={(e) =>
+                    updateActor({
+                      actionPointsMax: Math.max(
+                        0,
+                        parseInt(e.target.value) || 0,
+                      ),
+                    })
+                  }
+                />
               </div>
             </div>
-            <SpriteSheetViewer src={resolveImage(actor.spriteSheet)} label="Sprite Sheet Preview" />
+            <SpriteSheetViewer
+              src={resolveImage(actor.spriteSheet)}
+              label="Sprite Sheet Preview"
+            />
           </CardContent>
         </Card>
 
@@ -342,10 +641,19 @@ const Index = () => {
             <h2 className="text-base font-bold text-foreground">Skills</h2>
           </div>
           {actor.skills.length === 0 && (
-            <p className="text-sm text-muted-foreground py-8 text-center">No skills yet. Add one to get started.</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              No skills yet. Add one to get started.
+            </p>
           )}
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={skillIds} strategy={verticalListSortingStrategy}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={skillIds}
+              strategy={verticalListSortingStrategy}
+            >
               {actor.skills.map((skill, i) => (
                 <SortableSkillItem key={skillIds[i]} id={skillIds[i]}>
                   <SkillEditor
@@ -362,7 +670,9 @@ const Index = () => {
                       updateActor({ skills });
                     }}
                     onDelete={() => {
-                      updateActor({ skills: actor.skills.filter((_, si) => si !== i) });
+                      updateActor({
+                        skills: actor.skills.filter((_, si) => si !== i),
+                      });
                       setSkillIds((ids) => ids.filter((_, si) => si !== i));
                     }}
                   />
@@ -370,11 +680,15 @@ const Index = () => {
               ))}
             </SortableContext>
           </DndContext>
-          <Button size="sm" className="w-full -ml-7 max-w-[calc(100%+1.75rem)]" onClick={() => {
-            setSkillsCollapsed(false);
-            setSkillIds((ids) => [...ids, genUid()]);
-            updateActor({ skills: [...actor.skills, createDefaultSkill()] });
-          }}>
+          <Button
+            size="sm"
+            className="w-full -ml-7 max-w-[calc(100%+1.75rem)]"
+            onClick={() => {
+              setSkillsCollapsed(false);
+              setSkillIds((ids) => [...ids, genUid()]);
+              updateActor({ skills: [...actor.skills, createDefaultSkill()] });
+            }}
+          >
             <Plus className="h-4 w-4 mr-1" /> Add Skill
           </Button>
         </div>

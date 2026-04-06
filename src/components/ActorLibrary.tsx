@@ -131,11 +131,12 @@ export function ActorLibrary({ onLoadActor }: ActorLibraryProps) {
             entries.map((entry) => (
               <div
                 key={entry.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors group"
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent hover:border-primary/50 transition-all group cursor-pointer"
+                onClick={() => handleLoad(entry)}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-medium truncate">{entry.name}</p>
+                    <p className="font-medium truncate group-hover:text-primary transition-colors">{entry.name}</p>
                     {entry.handle ? (
                       <Badge variant="secondary" className="text-[10px] py-0 h-4">Local File</Badge>
                     ) : (
@@ -150,8 +151,7 @@ export function ActorLibrary({ onLoadActor }: ActorLibraryProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-primary"
-                    onClick={() => handleLoad(entry)}
+                    className="h-8 w-8 text-primary hover:bg-primary/10"
                     title="Load"
                   >
                     <FolderOpen className="h-4 w-4" />
@@ -159,8 +159,11 @@ export function ActorLibrary({ onLoadActor }: ActorLibraryProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-destructive"
-                    onClick={() => handleRemove(entry.id, entry.name)}
+                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemove(entry.id, entry.name);
+                    }}
                     title="Remove"
                   >
                     <Trash2 className="h-4 w-4" />

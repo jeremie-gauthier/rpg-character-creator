@@ -10,7 +10,8 @@ export interface LibraryEntry {
 
 const DB_NAME = "rpg-character-creator";
 const STORE_NAME = "library";
-const DB_VERSION = 1;
+const HANDLES_STORE = "handles";
+const DB_VERSION = 2;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -21,6 +22,9 @@ function openDB(): Promise<IDBDatabase> {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(HANDLES_STORE)) {
+        db.createObjectStore(HANDLES_STORE);
       }
     };
   });
@@ -40,11 +44,54 @@ export async function saveToLibrary(entry: LibraryEntry): Promise<void> {
 export async function getLibrary(): Promise<LibraryEntry[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, "readonly");
+    const transaction = db.transaction([STORE_NAME], "readonly");
     const store = transaction.objectStore(STORE_NAME);
     const request = store.getAll();
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
+  });
+}
+
+export async function saveHandle(path: string, handle: FileSystemHandle): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(HANDLES_STORE, "readwrite");
+    const store = transaction.objectStore(HANDLES_STORE);
+    const request = store.put(handle, path);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
+}
+
+export async function getHandle(path: string): Promise<FileSystemHandle | null> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(HANDLES_STORE, "readonly");
+    const store = transaction.objectStore(HANDLES_STORE);
+    const request = store.get(path);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result || null);
+  });
+}
+
+export async function getAllHandles(): Promise<Record<string, FileSystemHandle>> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(HANDLES_STORE, "readonly");
+    const store = transaction.objectStore(HANDLES_STORE);
+    const request = store.getAll();
+    const keysRequest = store.getAllKeys();
+    
+    transaction.oncomplete = () => {
+      const results: Record<string, FileSystemHandle> = {};
+      const values = request.result;
+      const keys = keysRequest.result;
+      for (let i = 0; i < keys.length; i++) {
+        results[keys[i] as string] = values[i];
+      }
+      resolve(results);
+    };
+    transaction.onerror = () => reject(transaction.error);
   });
 }
 
