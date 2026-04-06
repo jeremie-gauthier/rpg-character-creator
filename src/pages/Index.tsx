@@ -6,11 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkillEditor } from "@/components/SkillEditor";
 import { SpriteSheetViewer } from "@/components/SpriteSheetViewer";
 import { createDefaultActor, createDefaultSkill, type Actor, type SkillConstraint, type SideEffect, type AnimationDefinition } from "@/types/actor";
-import { Download, Upload, Plus, ImagePlus, GripVertical, Gamepad2 } from "lucide-react";
+import { Download, Upload, Plus, ImagePlus, GripVertical, Gamepad2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { ActorLibrary } from "@/components/ActorLibrary";
+import { verifyPermission, saveToLibrary } from "@/lib/storage";
 
 let nextSkillUid = 1;
 const genUid = () => `skill-${nextSkillUid++}`;
@@ -32,12 +34,97 @@ function SortableSkillItem({ id, children }: { id: string; children: React.React
   );
 }
 
+const prepareActorForExport = (actor: Actor) => {
+  const cleanConstraint = (c: SkillConstraint) => {
+    const cleaned = { ...c } as Record<string, unknown>;
+    if (c.type === "cast") {
+      if (c.shape === "diamond") delete cleaned.shape;
+      if (c.hasLineOfSight === false) delete cleaned.hasLineOfSight;
+    }
+    return cleaned;
+  };
+
+  const cleanAnimationDefinition = (a: AnimationDefinition): Record<string, unknown> => {
+    const cleaned: Record<string, unknown> = {
+      columnIdx: a.columnIdx,
+      frameDurationMs: a.frameDurationMs,
+    };
+
+    if (a.frameEvents && a.frameEvents.length > 0) {
+      cleaned.frameEvents = a.frameEvents.map((ev) => {
+        if (ev.type === "play_audio") return ev;
+        return { type: ev.type };
+      });
+    }
+
+    return cleaned;
+  };
+
+  const cleanSideEffect = (se: SideEffect): Record<string, unknown> => {
+    const cleaned = { ...se } as Record<string, unknown>;
+    
+    if ("animation" in se && se.animation) {
+      if (se.animation.length === 0) {
+        delete cleaned.animation;
+      } else {
+        cleaned.animation = se.animation.map(cleanAnimationDefinition);
+      }
+    }
+    
+    if ("loop" in se && (se.loop === false || se.loop === undefined)) {
+      delete cleaned.loop;
+    }
+    
+    if ("radius" in se && se.radius === 0) delete cleaned.radius;
+    if ("minRadius" in se && se.minRadius === 0) delete cleaned.minRadius;
+    if ("shape" in se && se.shape === "diamond") delete cleaned.shape;
+
+    if ("projectile" in se && se.projectile) {
+      cleaned.projectile = {
+        ...se.projectile,
+        frames: se.projectile.frames.map(cleanAnimationDefinition)
+      };
+      if (se.projectile.loop === false) delete (cleaned.projectile as any).loop;
+    }
+
+    if ("tileAnimation" in se && se.tileAnimation) {
+      cleaned.tileAnimation = {
+        ...se.tileAnimation,
+        frames: se.tileAnimation.frames.map(cleanAnimationDefinition)
+      };
+    }
+
+    if (se.type === "apply-condition" && se.condition && (se.condition.name === "defensiveStance" || se.condition.name === "offensiveStance") && se.condition.reactionSkill) {
+      cleaned.condition = {
+        ...se.condition,
+        reactionSkill: {
+          ...se.condition.reactionSkill,
+          constraints: se.condition.reactionSkill.constraints?.map(cleanConstraint),
+          sideEffects: se.condition.reactionSkill.sideEffects?.map(cleanSideEffect)
+        }
+      };
+    }
+
+    return cleaned;
+  };
+
+  return {
+    ...actor,
+    skills: actor.skills.map((s) => ({
+      ...s,
+      constraints: s.constraints.map(cleanConstraint),
+      sideEffects: s.sideEffects.map(cleanSideEffect),
+    })),
+  };
+};
+
 const Index = () => {
   const [actor, setActor] = useState<Actor>(createDefaultActor());
+  const [currentHandle, setCurrentHandle] = useState<FileSystemFileHandle | null>(null);
+  const [currentLibraryId, setCurrentLibraryId] = useState<string | null>(null);
   const [skillIds, setSkillIds] = useState<string[]>([genUid()]);
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
-  const spriteUploadRef = useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -77,105 +164,61 @@ const Index = () => {
     input.click();
   };
 
-  const exportJson = () => {
-    if (!actor.race || !actor.job || !actor.spriteSheet) {
+  const validateActor = (a: Actor) => {
+    if (!a.race || !a.job || !a.spriteSheet) {
       toast.error("Race, Job, and Sprite Sheet are required.");
-      return;
+      return false;
     }
-    if (actor.healthPointsMax < 1) {
+    if (a.healthPointsMax < 1) {
       toast.error("Health Points Max must be at least 1.");
-      return;
+      return false;
+    }
+    return true;
+  };
+
+  const saveActor = async () => {
+    if (!validateActor(actor)) return;
+
+    if (currentHandle) {
+      try {
+        const hasPermission = await verifyPermission(currentHandle, true);
+        if (!hasPermission) {
+          toast.error("Write permission denied. Exporting instead.");
+          exportJson();
+          return;
+        }
+
+        const clean = prepareActorForExport(actor);
+        const writable = await currentHandle.createWritable();
+        await writable.write(JSON.stringify(clean, null, 2));
+        await writable.close();
+
+        // Update library cache if this file is tracked
+        if (currentLibraryId) {
+          await saveToLibrary({
+            id: currentLibraryId,
+            name: `${actor.race}-${actor.job}`,
+            handle: currentHandle,
+            actor,
+            lastModified: Date.now()
+          });
+        }
+
+        toast.success("File saved directly!");
+        return;
+      } catch (error) {
+        console.error("Direct save failed", error);
+        toast.error("Direct save failed. Exporting instead.");
+      }
     }
 
-    const cleanConstraint = (c: SkillConstraint) => {
-      const cleaned = { ...c } as Record<string, unknown>;
-      if (c.type === "cast") {
-        if (c.shape === "diamond") delete cleaned.shape;
-        if (c.hasLineOfSight === false) delete cleaned.hasLineOfSight;
-      }
-      return cleaned;
-    };
+    exportJson();
+  };
 
-    const cleanAnimationDefinition = (a: AnimationDefinition): Record<string, unknown> => {
-      const cleaned: Record<string, unknown> = {
-        columnIdx: a.columnIdx,
-        frameDurationMs: a.frameDurationMs,
-      };
+  const exportJson = () => {
+    if (!validateActor(actor)) return;
 
-      if (a.frameEvents && a.frameEvents.length > 0) {
-        cleaned.frameEvents = a.frameEvents.map((ev) => {
-          if (ev.type === "play_audio") return ev;
-          // For other types, only include the type field
-          return { type: ev.type };
-        });
-      }
-
-      return cleaned;
-    };
-
-    const cleanSideEffect = (se: SideEffect): Record<string, unknown> => {
-      const cleaned = { ...se } as Record<string, unknown>;
-      
-      // Clean up animation frames
-      if ("animation" in se && se.animation) {
-        if (se.animation.length === 0) {
-          delete cleaned.animation;
-        } else {
-          cleaned.animation = se.animation.map(cleanAnimationDefinition);
-        }
-      }
-      
-      // Clean up loop
-      if ("loop" in se && (se.loop === false || se.loop === undefined)) {
-        delete cleaned.loop;
-      }
-      
-      // Clean up AoE fields if they are 0/default
-      if ("radius" in se && se.radius === 0) delete cleaned.radius;
-      if ("minRadius" in se && se.minRadius === 0) delete cleaned.minRadius;
-      if ("shape" in se && se.shape === "diamond") delete cleaned.shape;
-
-      // Clean up projectile if present
-      if ("projectile" in se && se.projectile) {
-        cleaned.projectile = {
-          ...se.projectile,
-          frames: se.projectile.frames.map(cleanAnimationDefinition)
-        };
-        if (se.projectile.loop === false) delete (cleaned.projectile as any).loop;
-      }
-
-      // Clean up tileAnimation if present
-      if ("tileAnimation" in se && se.tileAnimation) {
-        cleaned.tileAnimation = {
-          ...se.tileAnimation,
-          frames: se.tileAnimation.frames.map(cleanAnimationDefinition)
-        };
-      }
-
-      // Recursively clean reactionSkill if present in condition
-      if (se.type === "apply-condition" && se.condition && (se.condition.name === "defensiveStance" || se.condition.name === "offensiveStance") && se.condition.reactionSkill) {
-        cleaned.condition = {
-          ...se.condition,
-          reactionSkill: {
-            ...se.condition.reactionSkill,
-            constraints: se.condition.reactionSkill.constraints?.map(cleanConstraint),
-            sideEffects: se.condition.reactionSkill.sideEffects?.map(cleanSideEffect)
-          }
-        };
-      }
-
-      return cleaned;
-    };
-
-    const clean = {
-      ...actor,
-      skills: actor.skills.map((s) => ({
-        ...s,
-        constraints: s.constraints.map(cleanConstraint),
-        sideEffects: s.sideEffects.map(cleanSideEffect),
-      })),
-    };
-
+    const clean = prepareActorForExport(actor);
     const blob = new Blob([JSON.stringify(clean, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -196,6 +239,8 @@ const Index = () => {
       try {
         const data = JSON.parse(ev.target?.result as string) as Actor;
         setActor(data);
+        setCurrentHandle(null);
+        setCurrentLibraryId(null);
         setSkillIds(data.skills.map(() => genUid()));
         setSkillsCollapsed(true);
         toast.success("Actor loaded!");
@@ -205,6 +250,14 @@ const Index = () => {
     };
     reader.readAsText(file);
     e.target.value = "";
+  };
+
+  const handleLoadFromLibrary = (data: Actor, id: string, handle?: FileSystemFileHandle) => {
+    setActor(data);
+    setCurrentLibraryId(id);
+    setCurrentHandle(handle || null);
+    setSkillIds(data.skills.map(() => genUid()));
+    setSkillsCollapsed(true);
   };
 
   return (
@@ -218,12 +271,17 @@ const Index = () => {
                 <Gamepad2 className="h-4 w-4 mr-1 text-primary" /> Play Game
               </a>
             </Button>
+            
+            <ActorLibrary onLoadActor={handleLoadFromLibrary} />
+
+            <div className="w-[1px] h-8 bg-border mx-1" />
+
             <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={loadJson} />
             <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-              <Upload className="h-4 w-4 mr-1" /> Load JSON
+              <Upload className="h-4 w-4 mr-1" /> Load
             </Button>
-            <Button size="sm" onClick={exportJson}>
-              <Download className="h-4 w-4 mr-1" /> Export JSON
+            <Button size="sm" onClick={saveActor} className={currentHandle ? "bg-primary" : "bg-muted-foreground"}>
+              <Save className="h-4 w-4 mr-1" /> {currentHandle ? "Save" : "Export"}
             </Button>
           </div>
         </div>
@@ -231,8 +289,13 @@ const Index = () => {
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-base">Actor Info</CardTitle>
+            {currentHandle && (
+              <span className="text-[10px] text-muted-foreground bg-accent px-2 py-1 rounded italic truncate max-w-[200px]">
+                Editing: {currentHandle.name}
+              </span>
+            )}
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -275,7 +338,9 @@ const Index = () => {
         </Card>
 
         <div className="space-y-3 pl-7">
-          <h2 className="text-base font-bold text-foreground -ml-7">Skills</h2>
+          <div className="flex items-center justify-between -ml-7 mb-2">
+            <h2 className="text-base font-bold text-foreground">Skills</h2>
+          </div>
           {actor.skills.length === 0 && (
             <p className="text-sm text-muted-foreground py-8 text-center">No skills yet. Add one to get started.</p>
           )}
