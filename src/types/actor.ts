@@ -14,7 +14,8 @@ export type FrameEvent =
         | "wildfire";
     }
   | { type: "launch_projectile" }
-  | { type: "target_hurt" };
+  | { type: "target_hurt" }
+  | { type: "animate_tiles" };
 
 export interface AnimationDefinition {
   columnIdx: number;

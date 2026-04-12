@@ -32,6 +32,8 @@ export function AnimationFrameRow({
       newEvent = { type: "play_audio", audioId: "footstep" };
     } else if (type === "launch_projectile") {
       newEvent = { type: "launch_projectile" };
+    } else if (type === "animate_tiles") {
+      newEvent = { type: "animate_tiles" };
     } else {
       newEvent = { type: "target_hurt" };
     }
@@ -98,6 +100,14 @@ export function AnimationFrameRow({
                 >
                   Target Hurt
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 justify-start text-xs"
+                  onClick={() => addEvent("animate_tiles")}
+                >
+                  Animate Tiles
+                </Button>
               </div>
             </PopoverContent>
           </Popover>
@@ -126,6 +136,8 @@ export function AnimationFrameRow({
                 newEv = { type: "play_audio", audioId: "footstep" };
               } else if (newType === "launch_projectile") {
                 newEv = { type: "launch_projectile" };
+              } else if (newType === "animate_tiles") {
+                newEv = { type: "animate_tiles" };
               } else {
                 newEv = { type: "target_hurt" };
               }
@@ -142,6 +154,7 @@ export function AnimationFrameRow({
                 launch_projectile
               </SelectItem>
               <SelectItem value="target_hurt">target_hurt</SelectItem>
+              <SelectItem value="animate_tiles">animate_tiles</SelectItem>
             </SelectContent>
           </Select>
 
