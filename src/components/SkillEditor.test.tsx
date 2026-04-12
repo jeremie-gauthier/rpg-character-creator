@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { filterEffectOptions, filterPresetAnimations } from "./SkillEditor";
+import { filterEffectOptions, filterPresetAnimations } from "@/lib/skill-utils";
 import { PREDEFINED_ANIMATION_KEYS } from "@/data/predefined-animations";
 
 describe("filterEffectOptions", () => {
