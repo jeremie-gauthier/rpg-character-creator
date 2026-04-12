@@ -10,7 +10,8 @@ export type FrameEvent =
         | "sword_attack"
         | "hurt"
         | "fireball"
-        | "fire_explosion";
+        | "fire_explosion"
+        | "wildfire";
     }
   | { type: "launch_projectile" }
   | { type: "target_hurt" };

@@ -19,6 +19,7 @@ export const AUDIO_IDS = [
   "hurt",
   "fireball",
   "fire_explosion",
+  "wildfire",
 ] as const;
 
 export const AOE_SHAPES: AoeShape[] = [
