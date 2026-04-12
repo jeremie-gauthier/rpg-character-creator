@@ -132,6 +132,8 @@ export type SideEffect =
       shape?: AoeShape;
       animation?: AnimationDefinition[];
       loop?: boolean;
+      projectile?: ProjectileJsonDefinition;
+      tileAnimation?: TileAnimationJsonDefinition;
     }
   | {
       type: "apply-heal-per-condition";
