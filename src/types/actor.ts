@@ -1,14 +1,19 @@
-export interface FrameEvent {
-  type: "play_audio" | "launch_projectile" | "target_hurt";
-  audioId?:
-    | "footstep"
-    | "door"
-    | "chest"
-    | "chest_close"
-    | "ui_click"
-    | "sword_attack"
-    | "hurt";
-}
+export type FrameEvent =
+  | {
+      type: "play_audio";
+      audioId:
+        | "footstep"
+        | "door"
+        | "chest"
+        | "chest_close"
+        | "ui_click"
+        | "sword_attack"
+        | "hurt"
+        | "fireball"
+        | "fire_explosion";
+    }
+  | { type: "launch_projectile" }
+  | { type: "target_hurt" };
 
 export interface AnimationDefinition {
   columnIdx: number;
@@ -52,7 +57,7 @@ export type SideEffect =
       damageMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: AoeShape;
+      shape?: "diamond" | "square" | "circle" | "cross";
       animation?: AnimationDefinition[];
       loop?: boolean;
       projectile?: ProjectileJsonDefinition;
@@ -65,7 +70,7 @@ export type SideEffect =
       healMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: AoeShape;
+      shape?: "diamond" | "square" | "circle" | "cross";
       animation?: AnimationDefinition[];
       loop?: boolean;
     }
@@ -82,7 +87,7 @@ export type SideEffect =
       corruptionMax: number;
       radius?: number;
       minRadius?: number;
-      shape?: AoeShape;
+      shape?: "diamond" | "square" | "circle" | "cross";
       animation?: AnimationDefinition[];
       loop?: boolean;
     }

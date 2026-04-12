@@ -275,6 +275,10 @@ const Index = () => {
         return path;
       }
 
+      // If this path is a known local file handle that hasn't been resolved yet,
+      // return empty so viewers hide gracefully instead of showing a broken image error
+      if (handleMap[cleanPath]) return "";
+
       // Handle deployment base URL for absolute local assets
       if (cleanPath.startsWith("/")) {
         const base = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -283,7 +287,7 @@ const Index = () => {
 
       return path;
     },
-    [imageMap],
+    [imageMap, handleMap],
   );
 
   const uploadImage = async (

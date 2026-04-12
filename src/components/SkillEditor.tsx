@@ -2,10 +2,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type {
   Skill,
   SkillRequirement,
@@ -18,59 +32,60 @@ import type {
   ReactionSkillJson,
   FrameEvent,
 } from "@/types/actor";
-import { ChevronDown, GripVertical, ImagePlus, Plus, Trash2, Wand2 } from "lucide-react";
+import {
+  ChevronDown,
+  GripVertical,
+  ImagePlus,
+  Plus,
+  Trash2,
+  Wand2,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { IconPreview } from "./SpriteSheetViewer";
 import { AnimationPreview } from "./AnimationPreview";
 import { AoePreview } from "./AoePreview";
-import { PREDEFINED_ANIMATIONS, PREDEFINED_ANIMATION_KEYS, type PresetAnimationKey } from "@/data/predefined-animations";
+import {
+  PREDEFINED_ANIMATIONS,
+  type PresetAnimationKey,
+} from "@/data/predefined-animations";
+import {
+  AUDIO_IDS,
+  AOE_SHAPES,
+  AOE_SHAPES_NO_DIAGONAL,
+  CONDITION_NAMES,
+  filterEffectOptions,
+  filterPresetAnimations,
+} from "@/lib/skill-utils";
 
-const AUDIO_IDS = ["footstep", "door", "chest", "chest_close", "ui_click", "sword_attack", "hurt"] as const;
-const AOE_SHAPES: AoeShape[] = ["diamond", "square", "circle", "cross", "diagonal"];
-const AOE_SHAPES_NO_DIAGONAL: AoeShape[] = ["diamond", "square", "circle", "cross"];
-const CONDITION_NAMES: ConditionName[] = ["damageReduction", "damageAugmentation", "defensiveStance", "offensiveStance", "bleeding", "burning"];
-
-export type EffectOption = {
-  readonly label: string;
-  readonly group: "Damage & Healing" | "Movement" | "Status";
-  readonly default: SideEffect;
-};
-
-const SIDE_EFFECT_OPTIONS: readonly EffectOption[] = [
-  { label: "Damage",          group: "Damage & Healing", default: { type: "apply-damage",           subject: "target", damageMin: 0, damageMax: 1, radius: 0, minRadius: 0, shape: "diamond" } },
-  { label: "Heal",            group: "Damage & Healing", default: { type: "apply-heal",             subject: "target", healMin: 0, healMax: 1 } },
-  { label: "Corruption",      group: "Damage & Healing", default: { type: "apply-corruption",       subject: "target", corruptionMin: 0, corruptionMax: 1 } },
-  { label: "Heal Corruption",       group: "Damage & Healing", default: { type: "apply-heal-corruption",       subject: "target", healMin: 0, healMax: 1 } },
-  { label: "Damage per Condition",  group: "Damage & Healing", default: { type: "apply-damage-per-condition", subject: "target", conditionName: "bleeding", damagePerStack: 1 } },
-  { label: "Heal per Condition",    group: "Damage & Healing", default: { type: "apply-heal-per-condition",   subject: "target", conditionName: "bleeding", healPerStack: 1 } },
-  { label: "Charge",                group: "Movement",         default: { type: "charge-target" } },
-  { label: "Pull",                  group: "Movement",         default: { type: "pull-target" } },
-  { label: "Push",                  group: "Movement",         default: { type: "push-target", pushForce: 1 } },
-  { label: "Condition",             group: "Status",           default: { type: "apply-condition",             subject: "target", condition: { name: "damageReduction", durationMax: 1 } } },
-  { label: "Cleanse",               group: "Status",           default: { type: "apply-condition-cleanse",     subject: "target", conditionCleaner: "all" } },
-];
-
-export function filterEffectOptions(query: string): EffectOption[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return SIDE_EFFECT_OPTIONS;
-  return SIDE_EFFECT_OPTIONS.filter((o) => o.label.toLowerCase().includes(q));
-}
-
-export function filterPresetAnimations(query: string): PresetAnimationKey[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return PREDEFINED_ANIMATION_KEYS;
-  return PREDEFINED_ANIMATION_KEYS.filter((k) => k.toLowerCase().includes(q));
-}
-
-function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEffect) => void; triggerClassName?: string }) {
+function AddEffectPopover({
+  onAdd,
+  triggerClassName,
+}: {
+  onAdd: (effect: SideEffect) => void;
+  triggerClassName?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const groups = (["Damage & Healing", "Movement", "Status"] as const);
+  const groups = ["Damage & Healing", "Movement", "Status"] as const;
   const filtered = filterEffectOptions(query);
 
   const handleSelect = (effect: SideEffect) => {
@@ -80,7 +95,13 @@ function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEff
   };
 
   return (
-    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setQuery(""); }}>
+    <Popover
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setQuery("");
+      }}
+    >
       <PopoverTrigger asChild>
         <Button size="sm" variant="outline" className={triggerClassName}>
           <Plus className="h-3 w-3 mr-1" /> Add Effect
@@ -89,7 +110,10 @@ function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEff
       <PopoverContent
         className="w-56 p-2"
         align="end"
-        onOpenAutoFocus={(e) => { e.preventDefault(); inputRef.current?.focus(); }}
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          inputRef.current?.focus();
+        }}
       >
         <Input
           ref={inputRef}
@@ -104,7 +128,9 @@ function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEff
             if (items.length === 0) return null;
             return (
               <div key={group}>
-                <p className="text-xs text-muted-foreground px-1 mb-1">{group}</p>
+                <p className="text-xs text-muted-foreground px-1 mb-1">
+                  {group}
+                </p>
                 {items.map((o) => (
                   <button
                     type="button"
@@ -119,7 +145,9 @@ function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEff
             );
           })}
           {filtered.length === 0 && (
-            <p className="text-xs text-muted-foreground px-1">No effects match.</p>
+            <p className="text-xs text-muted-foreground px-1">
+              No effects match.
+            </p>
           )}
         </div>
       </PopoverContent>
@@ -127,7 +155,11 @@ function AddEffectPopover({ onAdd, triggerClassName }: { onAdd: (effect: SideEff
   );
 }
 
-function PresetAnimationPopover({ onSelect }: { onSelect: (frames: AnimationDefinition[]) => void }) {
+function PresetAnimationPopover({
+  onSelect,
+}: {
+  onSelect: (frames: AnimationDefinition[]) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -141,7 +173,13 @@ function PresetAnimationPopover({ onSelect }: { onSelect: (frames: AnimationDefi
   };
 
   return (
-    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setQuery(""); }}>
+    <Popover
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setQuery("");
+      }}
+    >
       <PopoverTrigger asChild>
         <Button size="sm" variant="outline" className="h-6 text-xs">
           <Wand2 className="h-3 w-3 mr-1" /> Preset
@@ -150,7 +188,10 @@ function PresetAnimationPopover({ onSelect }: { onSelect: (frames: AnimationDefi
       <PopoverContent
         className="w-48 p-2"
         align="end"
-        onOpenAutoFocus={(e) => { e.preventDefault(); inputRef.current?.focus(); }}
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          inputRef.current?.focus();
+        }}
       >
         <Input
           ref={inputRef}
@@ -172,7 +213,9 @@ function PresetAnimationPopover({ onSelect }: { onSelect: (frames: AnimationDefi
               </button>
             ))
           ) : (
-            <p className="text-xs text-muted-foreground px-1">No presets match.</p>
+            <p className="text-xs text-muted-foreground px-1">
+              No presets match.
+            </p>
           )}
         </div>
       </PopoverContent>
@@ -193,25 +236,41 @@ function AnimationFramesSection({
   spriteSheet: string | undefined;
   width?: number;
   height?: number;
-  onChange: (patch: { animation: AnimationDefinition[] } | { loop: boolean }) => void;
+  onChange: (
+    patch: { animation: AnimationDefinition[] } | { loop: boolean },
+  ) => void;
 }) {
   return (
     <div className="pl-4 space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <span className="text-xs text-muted-foreground">Animation Frames</span>
+          <span className="text-xs text-muted-foreground">
+            Animation Frames
+          </span>
           <div className="flex items-center gap-1">
-            <Checkbox checked={loop} onCheckedChange={(v) => onChange({ loop: !!v })} />
+            <Checkbox
+              checked={loop}
+              onCheckedChange={(v) => onChange({ loop: !!v })}
+            />
             <Label className="text-xs">Loop</Label>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <PresetAnimationPopover onSelect={(frames) => onChange({ animation: frames })} />
+          <PresetAnimationPopover
+            onSelect={(frames) => onChange({ animation: frames })}
+          />
           <Button
             size="sm"
             variant="outline"
             className="h-6 text-xs"
-            onClick={() => onChange({ animation: [...animation, { columnIdx: 0, frameDurationMs: 150 }] })}
+            onClick={() =>
+              onChange({
+                animation: [
+                  ...animation,
+                  { columnIdx: 0, frameDurationMs: 150 },
+                ],
+              })
+            }
           >
             <Plus className="h-3 w-3 mr-1" /> Frame
           </Button>
@@ -227,7 +286,9 @@ function AnimationFramesSection({
             anim[fi] = f;
             onChange({ animation: anim });
           }}
-          onDelete={() => onChange({ animation: animation.filter((_, i) => i !== fi) })}
+          onDelete={() =>
+            onChange({ animation: animation.filter((_, i) => i !== fi) })
+          }
         />
       ))}
 
@@ -257,18 +318,34 @@ interface SkillEditorProps {
 }
 
 function generateSkillId(race: string, job: string, name: string): string {
-  const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const slugify = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
   return `${slugify(race)}-${slugify(job)}-${slugify(name)}`;
 }
 
-export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveImage, onUploadImage, onChange, onDelete, defaultOpen = true }: SkillEditorProps) {
+export function SkillEditor({
+  skill,
+  actorRace,
+  actorJob,
+  spriteSheet,
+  resolveImage,
+  onUploadImage,
+  onChange,
+  onDelete,
+  defaultOpen = true,
+}: SkillEditorProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [reqOpen, setReqOpen] = useState(false);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [sideEffectsOpen, setSideEffectsOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const update = (partial: Partial<Skill>) => {
@@ -288,7 +365,9 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
 
   const hasSanityReq = skill.requirements.some((r) => r.type === "sanity_form");
 
-  const sanityReq = skill.requirements.find((r) => r.type === "sanity_form") as Extract<SkillRequirement, { type: "sanity_form" }> | undefined;
+  const sanityReq = skill.requirements.find((r) => r.type === "sanity_form") as
+    | Extract<SkillRequirement, { type: "sanity_form" }>
+    | undefined;
   const cardBorderColor = sanityReq ? "border-l-4" : "";
   const cardBorderStyle = sanityReq
     ? sanityReq.expectedForm === "PURE"
@@ -297,17 +376,29 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
     : {};
 
   return (
-    <Card className={`border-border ${cardBorderColor}`} style={cardBorderStyle}>
+    <Card
+      className={`border-border ${cardBorderColor}`}
+      style={cardBorderStyle}
+    >
       <Collapsible open={open} onOpenChange={setOpen}>
         <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between">
             <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-              <ChevronDown className={`h-4 w-4 transition-transform ${open ? "" : "-rotate-90"}`} />
-              <CardTitle className="text-base">{skill.name || "Unnamed Skill"}</CardTitle>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${open ? "" : "-rotate-90"}`}
+              />
+              <CardTitle className="text-base">
+                {skill.name || "Unnamed Skill"}
+              </CardTitle>
             </CollapsibleTrigger>
             <div className="flex items-center gap-2">
               <IconPreview src={resolveImage(skill.icon)} />
-              <Button variant="ghost" size="icon" onClick={onDelete} className="h-8 w-8 text-destructive">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onDelete}
+                className="h-8 w-8 text-destructive"
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -318,17 +409,39 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label>ID (auto)</Label>
-                <Input value={skill.id} readOnly className="bg-muted text-muted-foreground" />
+                <Input
+                  value={skill.id}
+                  readOnly
+                  className="bg-muted text-muted-foreground"
+                />
               </div>
               <div>
                 <Label>Name</Label>
-                <Input value={skill.name} onChange={(e) => update({ name: e.target.value })} placeholder="Skill Name" />
+                <Input
+                  value={skill.name}
+                  onChange={(e) => update({ name: e.target.value })}
+                  placeholder="Skill Name"
+                />
               </div>
               <div>
                 <Label>Icon Path</Label>
                 <div className="flex gap-1">
-                  <Input value={skill.icon} onChange={(e) => update({ icon: e.target.value })} placeholder="/path/to/icon.png" className="flex-1" />
-                  <Button variant="outline" size="sm" className="h-9 px-2" onClick={() => onUploadImage(skill.icon, (path) => { if (!skill.icon) update({ icon: path }); })}>
+                  <Input
+                    value={skill.icon}
+                    onChange={(e) => update({ icon: e.target.value })}
+                    placeholder="/path/to/icon.png"
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-2"
+                    onClick={() =>
+                      onUploadImage(skill.icon, (path) => {
+                        if (!skill.icon) update({ icon: path });
+                      })
+                    }
+                  >
                     <ImagePlus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -340,47 +453,135 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
               <section className="space-y-2">
                 <div className="flex items-center justify-between">
                   <CollapsibleTrigger className="flex items-center gap-1 hover:opacity-70 transition-opacity">
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${reqOpen ? "" : "-rotate-90"}`} />
-                    <h4 className="text-sm font-semibold text-foreground">Requirements</h4>
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform ${reqOpen ? "" : "-rotate-90"}`}
+                    />
+                    <h4 className="text-sm font-semibold text-foreground">
+                      Requirements
+                    </h4>
                   </CollapsibleTrigger>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" onClick={() => update({ requirements: [...skill.requirements, { type: "resource_cost", resource: "ACTION_POINTS", amount: 1 }] })}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        update({
+                          requirements: [
+                            ...skill.requirements,
+                            {
+                              type: "resource_cost",
+                              resource: "ACTION_POINTS",
+                              amount: 1,
+                            },
+                          ],
+                        })
+                      }
+                    >
                       <Plus className="h-3 w-3 mr-1" /> Resource
                     </Button>
-                    <Button size="sm" variant="outline" disabled={hasSanityReq} onClick={() => update({ requirements: [...skill.requirements, { type: "sanity_form", expectedForm: "PURE" }] })}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={hasSanityReq}
+                      onClick={() =>
+                        update({
+                          requirements: [
+                            ...skill.requirements,
+                            { type: "sanity_form", expectedForm: "PURE" },
+                          ],
+                        })
+                      }
+                    >
                       <Plus className="h-3 w-3 mr-1" /> Sanity
                     </Button>
                   </div>
                 </div>
                 <CollapsibleContent className="space-y-2">
                   {skill.requirements.map((req, ri) => (
-                    <RequirementRow key={ri} req={req} onChange={(r) => { const a = [...skill.requirements]; a[ri] = r; update({ requirements: a }); }} onDelete={() => update({ requirements: skill.requirements.filter((_, i) => i !== ri) })} />
+                    <RequirementRow
+                      key={ri}
+                      req={req}
+                      onChange={(r) => {
+                        const a = [...skill.requirements];
+                        a[ri] = r;
+                        update({ requirements: a });
+                      }}
+                      onDelete={() =>
+                        update({
+                          requirements: skill.requirements.filter(
+                            (_, i) => i !== ri,
+                          ),
+                        })
+                      }
+                    />
                   ))}
                 </CollapsibleContent>
               </section>
             </Collapsible>
 
             {/* Constraints */}
-            <Collapsible open={constraintsOpen} onOpenChange={setConstraintsOpen}>
+            <Collapsible
+              open={constraintsOpen}
+              onOpenChange={setConstraintsOpen}
+            >
               <section className="space-y-2">
                 <div className="flex items-center justify-between">
                   <CollapsibleTrigger className="flex items-center gap-1 hover:opacity-70 transition-opacity">
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${constraintsOpen ? "" : "-rotate-90"}`} />
-                    <h4 className="text-sm font-semibold text-foreground">Constraints</h4>
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform ${constraintsOpen ? "" : "-rotate-90"}`}
+                    />
+                    <h4 className="text-sm font-semibold text-foreground">
+                      Constraints
+                    </h4>
                   </CollapsibleTrigger>
                   <div className="flex gap-1">
-                    {!skill.constraints.some(c => c.type === "cast") && (
-                      <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cast", minRange: 0, maxRange: 1 }] })}>
+                    {!skill.constraints.some((c) => c.type === "cast") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          update({
+                            constraints: [
+                              ...skill.constraints,
+                              { type: "cast", minRange: 0, maxRange: 1 },
+                            ],
+                          })
+                        }
+                      >
                         <Plus className="h-3 w-3 mr-1" /> Cast
                       </Button>
                     )}
-                    {!skill.constraints.some(c => c.type === "cooldown") && (
-                      <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "cooldown", turns: 1 }] })}>
+                    {!skill.constraints.some((c) => c.type === "cooldown") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          update({
+                            constraints: [
+                              ...skill.constraints,
+                              { type: "cooldown", turns: 1 },
+                            ],
+                          })
+                        }
+                      >
                         <Plus className="h-3 w-3 mr-1" /> Cooldown
                       </Button>
                     )}
-                    {!skill.constraints.some(c => c.type === "usagePerTurn") && (
-                      <Button size="sm" variant="outline" onClick={() => update({ constraints: [...skill.constraints, { type: "usagePerTurn", max: 1 }] })}>
+                    {!skill.constraints.some(
+                      (c) => c.type === "usagePerTurn",
+                    ) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          update({
+                            constraints: [
+                              ...skill.constraints,
+                              { type: "usagePerTurn", max: 1 },
+                            ],
+                          })
+                        }
+                      >
                         <Plus className="h-3 w-3 mr-1" /> Usage/Turn
                       </Button>
                     )}
@@ -388,21 +589,47 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                 </div>
                 <CollapsibleContent className="space-y-2">
                   {skill.constraints.map((c, ci) => (
-                    <ConstraintRow key={ci} constraint={c} onChange={(v) => { const a = [...skill.constraints]; a[ci] = v; update({ constraints: a }); }} onDelete={() => update({ constraints: skill.constraints.filter((_, i) => i !== ci) })} />
+                    <ConstraintRow
+                      key={ci}
+                      constraint={c}
+                      onChange={(v) => {
+                        const a = [...skill.constraints];
+                        a[ci] = v;
+                        update({ constraints: a });
+                      }}
+                      onDelete={() =>
+                        update({
+                          constraints: skill.constraints.filter(
+                            (_, i) => i !== ci,
+                          ),
+                        })
+                      }
+                    />
                   ))}
                 </CollapsibleContent>
               </section>
             </Collapsible>
 
             {/* Side Effects */}
-            <Collapsible open={sideEffectsOpen} onOpenChange={setSideEffectsOpen}>
+            <Collapsible
+              open={sideEffectsOpen}
+              onOpenChange={setSideEffectsOpen}
+            >
               <section className="space-y-2">
                 <div className="flex items-center justify-between">
                   <CollapsibleTrigger className="flex items-center gap-1 hover:opacity-70 transition-opacity">
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${sideEffectsOpen ? "" : "-rotate-90"}`} />
-                    <h4 className="text-sm font-semibold text-foreground">Side Effects</h4>
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform ${sideEffectsOpen ? "" : "-rotate-90"}`}
+                    />
+                    <h4 className="text-sm font-semibold text-foreground">
+                      Side Effects
+                    </h4>
                   </CollapsibleTrigger>
-                  <AddEffectPopover onAdd={(effect) => update({ sideEffects: [...skill.sideEffects, effect] })} />
+                  <AddEffectPopover
+                    onAdd={(effect) =>
+                      update({ sideEffects: [...skill.sideEffects, effect] })
+                    }
+                  />
                 </div>
                 <CollapsibleContent className="space-y-2">
                   <DndContext
@@ -413,11 +640,20 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                       if (over && active.id !== over.id) {
                         const oldIndex = Number(active.id);
                         const newIndex = Number(over.id);
-                        update({ sideEffects: arrayMove(skill.sideEffects, oldIndex, newIndex) });
+                        update({
+                          sideEffects: arrayMove(
+                            skill.sideEffects,
+                            oldIndex,
+                            newIndex,
+                          ),
+                        });
                       }
                     }}
                   >
-                    <SortableContext items={skill.sideEffects.map((_, i) => String(i))} strategy={verticalListSortingStrategy}>
+                    <SortableContext
+                      items={skill.sideEffects.map((_, i) => String(i))}
+                      strategy={verticalListSortingStrategy}
+                    >
                       {skill.sideEffects.map((se, si) => (
                         <SortableSideEffectRow
                           key={si}
@@ -426,8 +662,18 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
                           spriteSheet={spriteSheet}
                           onUploadImage={onUploadImage}
                           resolveImage={resolveImage}
-                          onChange={(v) => { const a = [...skill.sideEffects]; a[si] = v; update({ sideEffects: a }); }}
-                          onDelete={() => update({ sideEffects: skill.sideEffects.filter((_, i) => i !== si) })}
+                          onChange={(v) => {
+                            const a = [...skill.sideEffects];
+                            a[si] = v;
+                            update({ sideEffects: a });
+                          }}
+                          onDelete={() =>
+                            update({
+                              sideEffects: skill.sideEffects.filter(
+                                (_, i) => i !== si,
+                              ),
+                            })
+                          }
                         />
                       ))}
                     </SortableContext>
@@ -442,44 +688,119 @@ export function SkillEditor({ skill, actorRace, actorJob, spriteSheet, resolveIm
   );
 }
 
-function RequirementRow({ req, onChange, onDelete }: { req: SkillRequirement; onChange: (r: SkillRequirement) => void; onDelete: () => void }) {
+function RequirementRow({
+  req,
+  onChange,
+  onDelete,
+}: {
+  req: SkillRequirement;
+  onChange: (r: SkillRequirement) => void;
+  onDelete: () => void;
+}) {
   return (
     <div className="flex items-center gap-2 bg-muted rounded-md p-2">
-      <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">{req.type === "resource_cost" ? "Resource" : "Sanity"}</span>
+      <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">
+        {req.type === "resource_cost" ? "Resource" : "Sanity"}
+      </span>
       {req.type === "resource_cost" ? (
         <>
-          <Select value={req.resource} onValueChange={(v) => onChange({ ...req, resource: v as SkillRequirement & { type: "resource_cost" }["resource"] })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+          <Select
+            value={req.resource}
+            onValueChange={(v) =>
+              onChange({
+                ...req,
+                resource: v as Extract<
+                  SkillRequirement,
+                  { type: "resource_cost" }
+                >["resource"],
+              })
+            }
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="ACTION_POINTS">AP</SelectItem>
               <SelectItem value="HEALTH_POINTS">HP</SelectItem>
               <SelectItem value="CORRUPTION_POINTS">CP</SelectItem>
             </SelectContent>
           </Select>
-          <Input type="number" className="h-8 w-20" value={req.amount} onChange={(e) => onChange({ ...req, amount: parseInt(e.target.value) || 0 })} />
+          <Input
+            type="number"
+            className="h-8 w-20"
+            value={req.amount}
+            onChange={(e) =>
+              onChange({ ...req, amount: parseInt(e.target.value) || 0 })
+            }
+          />
         </>
       ) : (
-        <Select value={req.expectedForm} onValueChange={(v) => onChange({ ...req, expectedForm: v as SkillRequirement & { type: "sanity_form" }["expectedForm"] })}>
-          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+        <Select
+          value={req.expectedForm}
+          onValueChange={(v) =>
+            onChange({
+              ...req,
+              expectedForm: v as Extract<
+                SkillRequirement,
+                { type: "sanity_form" }
+              >["expectedForm"],
+            })
+          }
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="PURE">PURE</SelectItem>
             <SelectItem value="CORRUPTED">CORRUPTED</SelectItem>
           </SelectContent>
         </Select>
       )}
-      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 shrink-0"
+        onClick={onDelete}
+      >
+        <Trash2 className="h-3 w-3" />
+      </Button>
     </div>
   );
 }
 
-function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillConstraint; onChange: (c: SkillConstraint) => void; onDelete: () => void }) {
+function ConstraintRow({
+  constraint,
+  onChange,
+  onDelete,
+}: {
+  constraint: SkillConstraint;
+  onChange: (c: SkillConstraint) => void;
+  onDelete: () => void;
+}) {
   if (constraint.type === "cooldown") {
     return (
       <div className="flex items-center gap-2 bg-muted rounded-md p-2">
-        <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">cooldown</span>
+        <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">
+          cooldown
+        </span>
         <Label className="text-xs">Turns</Label>
-        <Input type="number" className="h-8 w-16" value={constraint.turns} onChange={(e) => onChange({ ...constraint, turns: parseInt(e.target.value) || 1 })} min={1} />
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        <Input
+          type="number"
+          className="h-8 w-16"
+          value={constraint.turns}
+          onChange={(e) =>
+            onChange({ ...constraint, turns: parseInt(e.target.value) || 1 })
+          }
+          min={1}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 ml-auto"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
       </div>
     );
   }
@@ -487,10 +808,27 @@ function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillCo
   if (constraint.type === "usagePerTurn") {
     return (
       <div className="flex items-center gap-2 bg-muted rounded-md p-2">
-        <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">usage/turn</span>
+        <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">
+          usage/turn
+        </span>
         <Label className="text-xs">Max</Label>
-        <Input type="number" className="h-8 w-16" value={constraint.max} onChange={(e) => onChange({ ...constraint, max: parseInt(e.target.value) || 1 })} min={1} />
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        <Input
+          type="number"
+          className="h-8 w-16"
+          value={constraint.max}
+          onChange={(e) =>
+            onChange({ ...constraint, max: parseInt(e.target.value) || 1 })
+          }
+          min={1}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 ml-auto"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
       </div>
     );
   }
@@ -502,28 +840,71 @@ function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillCo
   return (
     <div className="bg-muted rounded-md p-2 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground w-16 shrink-0">cast</span>
+        <span className="text-xs font-medium text-muted-foreground w-16 shrink-0">
+          cast
+        </span>
         <Label className="text-xs">Min</Label>
-        <Input type="number" className="h-8 w-16" value={constraint.minRange} onChange={(e) => onChange({ ...constraint, minRange: parseInt(e.target.value) || 0 })} min={0} />
+        <Input
+          type="number"
+          className="h-8 w-16"
+          value={constraint.minRange}
+          onChange={(e) =>
+            onChange({ ...constraint, minRange: parseInt(e.target.value) || 0 })
+          }
+          min={0}
+        />
         <Label className="text-xs">Max</Label>
-        <Input type="number" className="h-8 w-16" value={constraint.maxRange} onChange={(e) => onChange({ ...constraint, maxRange: parseInt(e.target.value) || 0 })} min={0} />
+        <Input
+          type="number"
+          className="h-8 w-16"
+          value={constraint.maxRange}
+          onChange={(e) =>
+            onChange({ ...constraint, maxRange: parseInt(e.target.value) || 0 })
+          }
+          min={0}
+        />
         <div className="flex items-center gap-1">
-          <Checkbox checked={!!constraint.hasLineOfSight} onCheckedChange={(v) => onChange({ ...constraint, hasLineOfSight: !!v })} />
+          <Checkbox
+            checked={!!constraint.hasLineOfSight}
+            onCheckedChange={(v) =>
+              onChange({ ...constraint, hasLineOfSight: !!v })
+            }
+          />
           <Label className="text-xs">LoS</Label>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 ml-auto"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
       </div>
 
       {/* Shape & preview */}
       <div className="bg-background rounded p-3 space-y-2">
-        <span className="text-xs font-semibold text-foreground">Range Shape</span>
+        <span className="text-xs font-semibold text-foreground">
+          Range Shape
+        </span>
         <div className="flex items-start gap-4">
           <div className="flex items-center gap-2">
             <Label className="text-xs w-16 shrink-0">Shape</Label>
-            <Select value={shape} onValueChange={(v) => onChange({ ...constraint, shape: v as AoeShape })}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <Select
+              value={shape}
+              onValueChange={(v) =>
+                onChange({ ...constraint, shape: v as AoeShape })
+              }
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {AOE_SHAPES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {AOE_SHAPES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -535,34 +916,71 @@ function ConstraintRow({ constraint, onChange, onDelete }: { constraint: SkillCo
 }
 
 /** Shared AoE block for side effects that support radius/minRadius/shape */
-function AoeBlock({ radius, minRadius, shape, shapes, onChange }: {
+function AoeBlock({
+  radius,
+  minRadius,
+  shape,
+  shapes,
+  onChange,
+}: {
   radius: number;
   minRadius: number;
   shape: AoeShape;
   shapes: AoeShape[];
-  onChange: (patch: { radius?: number; minRadius?: number; shape?: AoeShape }) => void;
+  onChange: (patch: {
+    radius?: number;
+    minRadius?: number;
+    shape?: AoeShape;
+  }) => void;
 }) {
   return (
     <div className="bg-background rounded p-3 space-y-2">
-      <span className="text-xs font-semibold text-foreground">Area of Effect</span>
+      <span className="text-xs font-semibold text-foreground">
+        Area of Effect
+      </span>
       <div className="flex items-start gap-4">
         <div className="space-y-2 flex-1">
           <div className="flex items-center gap-2">
             <Label className="text-xs w-16 shrink-0">Shape</Label>
-            <Select value={shape} onValueChange={(v) => onChange({ shape: v as AoeShape })}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <Select
+              value={shape}
+              onValueChange={(v) => onChange({ shape: v as AoeShape })}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {shapes.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {shapes.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-xs w-16 shrink-0">Radius</Label>
-            <Input type="number" className="h-8 w-20" value={radius} onChange={(e) => onChange({ radius: parseInt(e.target.value) || 0 })} min={0} />
+            <Input
+              type="number"
+              className="h-8 w-20"
+              value={radius}
+              onChange={(e) =>
+                onChange({ radius: parseInt(e.target.value) || 0 })
+              }
+              min={0}
+            />
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-xs w-16 shrink-0">Min Radius</Label>
-            <Input type="number" className="h-8 w-20" value={minRadius} onChange={(e) => onChange({ minRadius: parseInt(e.target.value) || 0 })} min={0} />
+            <Input
+              type="number"
+              className="h-8 w-20"
+              value={minRadius}
+              onChange={(e) =>
+                onChange({ minRadius: parseInt(e.target.value) || 0 })
+              }
+              min={0}
+            />
           </div>
         </div>
         {radius > 0 && (
@@ -590,8 +1008,19 @@ function SortableSideEffectRow({
   onChange: (e: SideEffect) => void;
   onDelete: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
   return (
     <div ref={setNodeRef} style={style} className="relative group">
       <div
@@ -601,12 +1030,26 @@ function SortableSideEffectRow({
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </div>
-      <SideEffectRow effect={effect} spriteSheet={spriteSheet} onUploadImage={onUploadImage} resolveImage={resolveImage} onChange={onChange} onDelete={onDelete} />
+      <SideEffectRow
+        effect={effect}
+        spriteSheet={spriteSheet}
+        onUploadImage={onUploadImage}
+        resolveImage={resolveImage}
+        onChange={onChange}
+        onDelete={onDelete}
+      />
     </div>
   );
 }
 
-function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onChange, onDelete }: {
+function SideEffectRow({
+  effect,
+  spriteSheet,
+  onUploadImage,
+  resolveImage,
+  onChange,
+  onDelete,
+}: {
   effect: SideEffect;
   spriteSheet: string;
   onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
@@ -622,20 +1065,36 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
     return (
       <div className="bg-muted rounded-md p-2 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">apply-cleanse</span>
-          <Select value={effect.subject} onValueChange={(v) => onChange({ ...effect, subject: v as "target" | "caster" })}>
-            <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">
+            apply-cleanse
+          </span>
+          <Select
+            value={effect.subject}
+            onValueChange={(v) =>
+              onChange({ ...effect, subject: v as "target" | "caster" })
+            }
+          >
+            <SelectTrigger className="h-8 text-xs w-20">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="target">target</SelectItem>
               <SelectItem value="caster">caster</SelectItem>
             </SelectContent>
           </Select>
           <Label className="text-xs">Cleanse</Label>
-          <Select 
-            value={effect.conditionCleaner === "all" ? "all" : "specific"} 
-            onValueChange={(v) => onChange({ ...effect, conditionCleaner: v === "all" ? "all" : [] })}
+          <Select
+            value={effect.conditionCleaner === "all" ? "all" : "specific"}
+            onValueChange={(v) =>
+              onChange({
+                ...effect,
+                conditionCleaner: v === "all" ? "all" : [],
+              })
+            }
           >
-            <SelectTrigger className="h-8 text-xs w-24"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs w-24">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">all</SelectItem>
               <SelectItem value="specific">specific</SelectItem>
@@ -644,12 +1103,19 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
           {effect.conditionCleaner !== "all" && (
             <div className="flex flex-wrap gap-1 mt-1">
               {CONDITION_NAMES.map((name) => (
-                <div key={name} className="flex items-center gap-1 bg-background px-2 py-0.5 rounded border border-border">
-                  <Checkbox 
+                <div
+                  key={name}
+                  className="flex items-center gap-1 bg-background px-2 py-0.5 rounded border border-border"
+                >
+                  <Checkbox
                     id={`cleanse-${name}`}
-                    checked={(effect.conditionCleaner as ConditionName[]).includes(name)} 
+                    checked={(
+                      effect.conditionCleaner as ConditionName[]
+                    ).includes(name)}
                     onCheckedChange={(checked) => {
-                      const cleaner = [...(effect.conditionCleaner as ConditionName[])];
+                      const cleaner = [
+                        ...(effect.conditionCleaner as ConditionName[]),
+                      ];
                       if (checked) {
                         cleaner.push(name);
                       } else {
@@ -659,12 +1125,24 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
                       onChange({ ...effect, conditionCleaner: cleaner });
                     }}
                   />
-                  <Label htmlFor={`cleanse-${name}`} className="text-[10px] leading-none cursor-pointer">{name}</Label>
+                  <Label
+                    htmlFor={`cleanse-${name}`}
+                    className="text-[10px] leading-none cursor-pointer"
+                  >
+                    {name}
+                  </Label>
                 </div>
               ))}
             </div>
           )}
-          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 ml-auto"
+            onClick={onDelete}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
 
         <AoeBlock
@@ -688,8 +1166,17 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
   if (effect.type === "charge-target" || effect.type === "pull-target") {
     return (
       <div className="flex items-center gap-2 bg-muted rounded-md p-2">
-        <span className="text-xs font-medium text-muted-foreground">{effect.type}</span>
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        <span className="text-xs font-medium text-muted-foreground">
+          {effect.type}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 ml-auto"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
       </div>
     );
   }
@@ -697,10 +1184,27 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
   if (effect.type === "push-target") {
     return (
       <div className="flex items-center gap-2 bg-muted rounded-md p-2">
-        <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">push-target</span>
+        <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">
+          push-target
+        </span>
         <Label className="text-xs">Force</Label>
-        <Input type="number" className="h-8 w-16" value={effect.pushForce} onChange={(e) => onChange({ ...effect, pushForce: parseInt(e.target.value) || 1 })} min={1} />
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        <Input
+          type="number"
+          className="h-8 w-16"
+          value={effect.pushForce}
+          onChange={(e) =>
+            onChange({ ...effect, pushForce: parseInt(e.target.value) || 1 })
+          }
+          min={1}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 ml-auto"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
       </div>
     );
   }
@@ -713,39 +1217,94 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
     return (
       <div className="bg-muted rounded-md p-2 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">apply-condition</span>
-          <Select value={effect.subject} onValueChange={(v) => onChange({ ...effect, subject: v as "target" | "caster" })}>
-            <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">
+            apply-condition
+          </span>
+          <Select
+            value={effect.subject}
+            onValueChange={(v) =>
+              onChange({ ...effect, subject: v as "target" | "caster" })
+            }
+          >
+            <SelectTrigger className="h-8 text-xs w-20">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="target">target</SelectItem>
               <SelectItem value="caster">caster</SelectItem>
             </SelectContent>
           </Select>
           <Label className="text-xs">Condition</Label>
-          <Select value={effect.condition.name} onValueChange={(v) => {
-            const dur = effect.condition.durationMax;
-            const defaultRS: ReactionSkillJson = { id: "", name: "", reactsTo: "enemies", sideEffects: [] };
-            
-            if (v === "damageReduction") {
-              onChange({ ...effect, condition: { name: "damageReduction", durationMax: dur } });
-            } else if (v === "damageAugmentation") {
-              onChange({ ...effect, condition: { name: "damageAugmentation", durationMax: dur } });
-            } else if (v === "defensiveStance") {
-              const prev = (effect.condition.name === "defensiveStance" || effect.condition.name === "offensiveStance") ? effect.condition.reactionSkill : defaultRS;
-              onChange({ ...effect, condition: { name: "defensiveStance", durationMax: dur, reactionSkill: prev } });
-            } else if (v === "offensiveStance") {
-              const prev = (effect.condition.name === "defensiveStance" || effect.condition.name === "offensiveStance") ? effect.condition.reactionSkill : defaultRS;
-              onChange({ ...effect, condition: { name: "offensiveStance", durationMax: dur, reactionSkill: prev } });
-            } else if (v === "bleeding") {
-              onChange({ ...effect, condition: { name: "bleeding", durationMax: dur } });
-            } else if (v === "burning") {
-              onChange({ ...effect, condition: { name: "burning", durationMax: dur } });
-            }
-          }}>
-            <SelectTrigger className="h-8 text-xs w-36"><SelectValue /></SelectTrigger>
+          <Select
+            value={effect.condition.name}
+            onValueChange={(v) => {
+              const dur = effect.condition.durationMax;
+              const defaultRS: ReactionSkillJson = {
+                id: "",
+                name: "",
+                reactsTo: "enemies",
+                sideEffects: [],
+              };
+
+              if (v === "damageReduction") {
+                onChange({
+                  ...effect,
+                  condition: { name: "damageReduction", durationMax: dur },
+                });
+              } else if (v === "damageAugmentation") {
+                onChange({
+                  ...effect,
+                  condition: { name: "damageAugmentation", durationMax: dur },
+                });
+              } else if (v === "defensiveStance") {
+                const prev =
+                  effect.condition.name === "defensiveStance" ||
+                  effect.condition.name === "offensiveStance"
+                    ? effect.condition.reactionSkill
+                    : defaultRS;
+                onChange({
+                  ...effect,
+                  condition: {
+                    name: "defensiveStance",
+                    durationMax: dur,
+                    reactionSkill: prev,
+                  },
+                });
+              } else if (v === "offensiveStance") {
+                const prev =
+                  effect.condition.name === "defensiveStance" ||
+                  effect.condition.name === "offensiveStance"
+                    ? effect.condition.reactionSkill
+                    : defaultRS;
+                onChange({
+                  ...effect,
+                  condition: {
+                    name: "offensiveStance",
+                    durationMax: dur,
+                    reactionSkill: prev,
+                  },
+                });
+              } else if (v === "bleeding") {
+                onChange({
+                  ...effect,
+                  condition: { name: "bleeding", durationMax: dur },
+                });
+              } else if (v === "burning") {
+                onChange({
+                  ...effect,
+                  condition: { name: "burning", durationMax: dur },
+                });
+              }
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs w-36">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="damageReduction">damageReduction</SelectItem>
-              <SelectItem value="damageAugmentation">damageAugmentation</SelectItem>
+              <SelectItem value="damageAugmentation">
+                damageAugmentation
+              </SelectItem>
               <SelectItem value="defensiveStance">defensiveStance</SelectItem>
               <SelectItem value="offensiveStance">offensiveStance</SelectItem>
               <SelectItem value="bleeding">bleeding</SelectItem>
@@ -753,18 +1312,55 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
             </SelectContent>
           </Select>
           <Label className="text-xs">Duration</Label>
-          <Input type="number" className="h-8 w-16" value={effect.condition.durationMax} onChange={(e) => onChange({ ...effect, condition: { ...effect.condition, durationMax: parseInt(e.target.value) || 1 } })} min={1} />
-          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+          <Input
+            type="number"
+            className="h-8 w-16"
+            value={effect.condition.durationMax}
+            onChange={(e) =>
+              onChange({
+                ...effect,
+                condition: {
+                  ...effect.condition,
+                  durationMax: parseInt(e.target.value) || 1,
+                },
+              })
+            }
+            min={1}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 ml-auto"
+            onClick={onDelete}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
 
         {/* Reaction Skill for defensiveStance / offensiveStance */}
-        {(effect.condition.name === "defensiveStance" || effect.condition.name === "offensiveStance") && (
+        {(effect.condition.name === "defensiveStance" ||
+          effect.condition.name === "offensiveStance") && (
           <ReactionSkillBlock
-            reactionSkill={(effect.condition as Extract<ConditionJson, { name: "defensiveStance" | "offensiveStance" }>).reactionSkill}
+            reactionSkill={
+              (
+                effect.condition as Extract<
+                  ConditionJson,
+                  { name: "defensiveStance" | "offensiveStance" }
+                >
+              ).reactionSkill
+            }
             spriteSheet={spriteSheet}
             onUploadImage={onUploadImage}
             resolveImage={resolveImage}
-            onChange={(rs) => onChange({ ...effect, condition: { ...effect.condition, reactionSkill: rs } as ConditionJson })}
+            onChange={(rs) =>
+              onChange({
+                ...effect,
+                condition: {
+                  ...effect.condition,
+                  reactionSkill: rs,
+                } as ConditionJson,
+              })
+            }
           />
         )}
 
@@ -787,7 +1383,10 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
   }
 
   // apply-damage-per-condition or apply-heal-per-condition
-  if (effect.type === "apply-damage-per-condition" || effect.type === "apply-heal-per-condition") {
+  if (
+    effect.type === "apply-damage-per-condition" ||
+    effect.type === "apply-heal-per-condition"
+  ) {
     const isDamage = effect.type === "apply-damage-per-condition";
     const label = isDamage ? "apply-dmg/cond" : "apply-heal/cond";
     const perStack = isDamage ? effect.damagePerStack : effect.healPerStack;
@@ -798,21 +1397,43 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
     return (
       <div className="bg-muted rounded-md p-2 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">{label}</span>
-          <Select value={effect.subject} onValueChange={(v) => onChange({ ...effect, subject: v as "target" | "caster" })}>
-            <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">
+            {label}
+          </span>
+          <Select
+            value={effect.subject}
+            onValueChange={(v) =>
+              onChange({ ...effect, subject: v as "target" | "caster" })
+            }
+          >
+            <SelectTrigger className="h-8 text-xs w-20">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="target">target</SelectItem>
               <SelectItem value="caster">caster</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={effect.conditionName} onValueChange={(v) => onChange({ ...effect, conditionName: v as ConditionName })}>
-            <SelectTrigger className="h-8 text-xs w-36"><SelectValue /></SelectTrigger>
+          <Select
+            value={effect.conditionName}
+            onValueChange={(v) =>
+              onChange({ ...effect, conditionName: v as ConditionName })
+            }
+          >
+            <SelectTrigger className="h-8 text-xs w-36">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {CONDITION_NAMES.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+              {CONDITION_NAMES.map((n) => (
+                <SelectItem key={n} value={n}>
+                  {n}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Label className="text-xs">{isDamage ? "Dmg/stack" : "Heal/stack"}</Label>
+          <Label className="text-xs">
+            {isDamage ? "Dmg/stack" : "Heal/stack"}
+          </Label>
           <Input
             type="number"
             className="h-8 w-16"
@@ -820,10 +1441,21 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
             min={1}
             onChange={(e) => {
               const val = parseInt(e.target.value) || 1;
-              onChange(isDamage ? { ...effect, damagePerStack: val } : { ...effect, healPerStack: val });
+              onChange(
+                isDamage
+                  ? { ...effect, damagePerStack: val }
+                  : { ...effect, healPerStack: val },
+              );
             }}
           />
-          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 ml-auto"
+            onClick={onDelete}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
         <AoeBlock
           radius={radius}
@@ -843,7 +1475,10 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
   }
 
   // apply-corruption or apply-heal-corruption
-  if (effect.type === "apply-corruption" || effect.type === "apply-heal-corruption") {
+  if (
+    effect.type === "apply-corruption" ||
+    effect.type === "apply-heal-corruption"
+  ) {
     const isCorruption = effect.type === "apply-corruption";
     const label = isCorruption ? "apply-corruption" : "apply-heal-corruption";
     const valMin = isCorruption ? effect.corruptionMin : effect.healMin;
@@ -854,28 +1489,62 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
 
     const updateMinMax = (field: "min" | "max", val: number) => {
       if (isCorruption) {
-        onChange(field === "min" ? { ...effect, corruptionMin: val } : { ...effect, corruptionMax: val });
+        onChange(
+          field === "min"
+            ? { ...effect, corruptionMin: val }
+            : { ...effect, corruptionMax: val },
+        );
       } else {
-        onChange(field === "min" ? { ...effect, healMin: val } : { ...effect, healMax: val });
+        onChange(
+          field === "min"
+            ? { ...effect, healMin: val }
+            : { ...effect, healMax: val },
+        );
       }
     };
 
     return (
       <div className="bg-muted rounded-md p-2 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">{label}</span>
-          <Select value={effect.subject} onValueChange={(v) => onChange({ ...effect, subject: v as "target" | "caster" })}>
-            <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+          <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">
+            {label}
+          </span>
+          <Select
+            value={effect.subject}
+            onValueChange={(v) =>
+              onChange({ ...effect, subject: v as "target" | "caster" })
+            }
+          >
+            <SelectTrigger className="h-8 text-xs w-20">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="target">target</SelectItem>
               <SelectItem value="caster">caster</SelectItem>
             </SelectContent>
           </Select>
           <Label className="text-xs">Min</Label>
-          <Input type="number" className="h-8 w-16" value={valMin} onChange={(e) => updateMinMax("min", parseInt(e.target.value) || 0)} />
+          <Input
+            type="number"
+            className="h-8 w-16"
+            value={valMin}
+            onChange={(e) => updateMinMax("min", parseInt(e.target.value) || 0)}
+          />
           <Label className="text-xs">Max</Label>
-          <Input type="number" className="h-8 w-16" value={valMax} onChange={(e) => updateMinMax("max", parseInt(e.target.value) || 0)} />
-          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+          <Input
+            type="number"
+            className="h-8 w-16"
+            value={valMax}
+            onChange={(e) => updateMinMax("max", parseInt(e.target.value) || 0)}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 ml-auto"
+            onClick={onDelete}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
         <AoeBlock
           radius={radius}
@@ -906,28 +1575,62 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
 
   const updateMinMax = (field: "min" | "max", val: number) => {
     if (isDamage) {
-      onChange(field === "min" ? { ...effect, damageMin: val } : { ...effect, damageMax: val });
+      onChange(
+        field === "min"
+          ? { ...effect, damageMin: val }
+          : { ...effect, damageMax: val },
+      );
     } else {
-      onChange(field === "min" ? { ...effect, healMin: val } : { ...effect, healMax: val });
+      onChange(
+        field === "min"
+          ? { ...effect, healMin: val }
+          : { ...effect, healMax: val },
+      );
     }
   };
 
   return (
     <div className="bg-muted rounded-md p-2 space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">{label}</span>
-        <Select value={effect.subject} onValueChange={(v) => onChange({ ...effect, subject: v as "target" | "caster" })}>
-          <SelectTrigger className="h-8 text-xs w-20"><SelectValue /></SelectTrigger>
+        <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">
+          {label}
+        </span>
+        <Select
+          value={effect.subject}
+          onValueChange={(v) =>
+            onChange({ ...effect, subject: v as "target" | "caster" })
+          }
+        >
+          <SelectTrigger className="h-8 text-xs w-20">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="target">target</SelectItem>
             <SelectItem value="caster">caster</SelectItem>
           </SelectContent>
         </Select>
         <Label className="text-xs">Min</Label>
-        <Input type="number" className="h-8 w-16" value={valMin} onChange={(e) => updateMinMax("min", parseInt(e.target.value) || 0)} />
+        <Input
+          type="number"
+          className="h-8 w-16"
+          value={valMin}
+          onChange={(e) => updateMinMax("min", parseInt(e.target.value) || 0)}
+        />
         <Label className="text-xs">Max</Label>
-        <Input type="number" className="h-8 w-16" value={valMax} onChange={(e) => updateMinMax("max", parseInt(e.target.value) || 0)} />
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-auto" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+        <Input
+          type="number"
+          className="h-8 w-16"
+          value={valMax}
+          onChange={(e) => updateMinMax("max", parseInt(e.target.value) || 0)}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 ml-auto"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
       </div>
 
       <AoeBlock
@@ -965,37 +1668,70 @@ function SideEffectRow({ effect, spriteSheet, onUploadImage, resolveImage, onCha
   );
 }
 
-function ReactionSkillBlock({ reactionSkill, spriteSheet, onUploadImage, resolveImage, onChange }: {
+function ReactionSkillBlock({
+  reactionSkill,
+  spriteSheet,
+  onUploadImage,
+  resolveImage,
+  onChange,
+}: {
   reactionSkill?: ReactionSkillJson;
   spriteSheet: string;
   onUploadImage: (pathKey: string, onPath?: (path: string) => void) => void;
   resolveImage: (path: string) => string;
   onChange: (rs: ReactionSkillJson) => void;
 }) {
-  const rs: ReactionSkillJson = reactionSkill || { id: "", name: "", reactsTo: "enemies", sideEffects: [] };
-  const update = (patch: Partial<ReactionSkillJson>) => onChange({ ...rs, ...patch });
+  const rs: ReactionSkillJson = reactionSkill || {
+    id: "",
+    name: "",
+    reactsTo: "enemies",
+    sideEffects: [],
+  };
+  const update = (patch: Partial<ReactionSkillJson>) =>
+    onChange({ ...rs, ...patch });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   return (
     <div className="bg-background rounded p-3 space-y-2 border border-border">
-      <span className="text-xs font-semibold text-foreground">Reaction Skill</span>
+      <span className="text-xs font-semibold text-foreground">
+        Reaction Skill
+      </span>
       <div className="grid grid-cols-3 gap-2">
         <div>
           <Label className="text-xs">ID</Label>
-          <Input className="h-8 text-xs" value={rs.id} onChange={(e) => update({ id: e.target.value })} placeholder="reaction-id" />
+          <Input
+            className="h-8 text-xs"
+            value={rs.id}
+            onChange={(e) => update({ id: e.target.value })}
+            placeholder="reaction-id"
+          />
         </div>
         <div>
           <Label className="text-xs">Name</Label>
-          <Input className="h-8 text-xs" value={rs.name} onChange={(e) => update({ name: e.target.value })} placeholder="Reaction Name" />
+          <Input
+            className="h-8 text-xs"
+            value={rs.name}
+            onChange={(e) => update({ name: e.target.value })}
+            placeholder="Reaction Name"
+          />
         </div>
         <div>
           <Label className="text-xs">Reacts To</Label>
-          <Select value={rs.reactsTo} onValueChange={(v) => update({ reactsTo: v as ReactionSkillJson["reactsTo"] })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+          <Select
+            value={rs.reactsTo}
+            onValueChange={(v) =>
+              update({ reactsTo: v as ReactionSkillJson["reactsTo"] })
+            }
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="enemies">enemies</SelectItem>
               <SelectItem value="allies">allies</SelectItem>
@@ -1010,15 +1746,40 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onUploadImage, resolve
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">Constraints</span>
           <div className="flex gap-1">
-            {!(rs.constraints || []).some(c => c.type === "cast") && (
-              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => update({ constraints: [...(rs.constraints || []), { type: "cast", minRange: 0, maxRange: 1 }] })}>
+            {!(rs.constraints || []).some((c) => c.type === "cast") && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-xs"
+                onClick={() =>
+                  update({
+                    constraints: [
+                      ...(rs.constraints || []),
+                      { type: "cast", minRange: 0, maxRange: 1 },
+                    ],
+                  })
+                }
+              >
                 <Plus className="h-3 w-3 mr-1" /> Cast
               </Button>
             )}
           </div>
         </div>
         {(rs.constraints || []).map((c, ci) => (
-          <ConstraintRow key={ci} constraint={c} onChange={(v) => { const a = [...(rs.constraints || [])]; a[ci] = v; update({ constraints: a }); }} onDelete={() => update({ constraints: (rs.constraints || []).filter((_, i) => i !== ci) })} />
+          <ConstraintRow
+            key={ci}
+            constraint={c}
+            onChange={(v) => {
+              const a = [...(rs.constraints || [])];
+              a[ci] = v;
+              update({ constraints: a });
+            }}
+            onDelete={() =>
+              update({
+                constraints: (rs.constraints || []).filter((_, i) => i !== ci),
+              })
+            }
+          />
         ))}
       </div>
 
@@ -1027,7 +1788,9 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onUploadImage, resolve
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">Side Effects</span>
           <AddEffectPopover
-            onAdd={(effect) => update({ sideEffects: [...rs.sideEffects, effect] })}
+            onAdd={(effect) =>
+              update({ sideEffects: [...rs.sideEffects, effect] })
+            }
             triggerClassName="h-6 text-xs"
           />
         </div>
@@ -1039,11 +1802,16 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onUploadImage, resolve
             if (over && active.id !== over.id) {
               const oldIndex = Number(active.id);
               const newIndex = Number(over.id);
-              update({ sideEffects: arrayMove(rs.sideEffects, oldIndex, newIndex) });
+              update({
+                sideEffects: arrayMove(rs.sideEffects, oldIndex, newIndex),
+              });
             }
           }}
         >
-          <SortableContext items={rs.sideEffects.map((_, i) => String(i))} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={rs.sideEffects.map((_, i) => String(i))}
+            strategy={verticalListSortingStrategy}
+          >
             {rs.sideEffects.map((se, si) => (
               <SortableSideEffectRow
                 key={si}
@@ -1052,8 +1820,16 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onUploadImage, resolve
                 spriteSheet={spriteSheet}
                 onUploadImage={onUploadImage}
                 resolveImage={resolveImage}
-                onChange={(v) => { const a = [...rs.sideEffects]; a[si] = v; update({ sideEffects: a }); }}
-                onDelete={() => update({ sideEffects: rs.sideEffects.filter((_, i) => i !== si) })}
+                onChange={(v) => {
+                  const a = [...rs.sideEffects];
+                  a[si] = v;
+                  update({ sideEffects: a });
+                }}
+                onDelete={() =>
+                  update({
+                    sideEffects: rs.sideEffects.filter((_, i) => i !== si),
+                  })
+                }
               />
             ))}
           </SortableContext>
@@ -1063,20 +1839,54 @@ function ReactionSkillBlock({ reactionSkill, spriteSheet, onUploadImage, resolve
   );
 }
 
-function AnimationFrameRow({ frame, onChange, onDelete }: { frame: AnimationDefinition; onChange: (f: AnimationDefinition) => void; onDelete: () => void }) {
+function AnimationFrameRow({
+  frame,
+  onChange,
+  onDelete,
+}: {
+  frame: AnimationDefinition;
+  onChange: (f: AnimationDefinition) => void;
+  onDelete: () => void;
+}) {
   const addEvent = (type: FrameEvent["type"]) => {
-    const newEvent: FrameEvent = { type };
-    if (type === "play_audio") newEvent.audioId = "footstep";
-    onChange({ ...frame, frameEvents: [...(frame.frameEvents || []), newEvent] });
+    let newEvent: FrameEvent;
+    if (type === "play_audio") {
+      newEvent = { type: "play_audio", audioId: "footstep" };
+    } else if (type === "launch_projectile") {
+      newEvent = { type: "launch_projectile" };
+    } else {
+      newEvent = { type: "target_hurt" };
+    }
+    onChange({
+      ...frame,
+      frameEvents: [...(frame.frameEvents || []), newEvent],
+    });
   };
 
   return (
     <div className="bg-background rounded p-2 space-y-1">
       <div className="flex items-center gap-2">
         <Label className="text-xs">Col</Label>
-        <Input type="number" className="h-7 w-14 text-xs" value={frame.columnIdx} onChange={(e) => onChange({ ...frame, columnIdx: parseInt(e.target.value) || 0 })} />
+        <Input
+          type="number"
+          className="h-7 w-14 text-xs"
+          value={frame.columnIdx}
+          onChange={(e) =>
+            onChange({ ...frame, columnIdx: parseInt(e.target.value) || 0 })
+          }
+        />
         <Label className="text-xs">ms</Label>
-        <Input type="number" className="h-7 w-16 text-xs" value={frame.frameDurationMs} onChange={(e) => onChange({ ...frame, frameDurationMs: parseInt(e.target.value) || 0 })} />
+        <Input
+          type="number"
+          className="h-7 w-16 text-xs"
+          value={frame.frameDurationMs}
+          onChange={(e) =>
+            onChange({
+              ...frame,
+              frameDurationMs: parseInt(e.target.value) || 0,
+            })
+          }
+        />
         <div className="flex items-center gap-1 ml-auto">
           <Popover>
             <PopoverTrigger asChild>
@@ -1086,32 +1896,73 @@ function AnimationFrameRow({ frame, onChange, onDelete }: { frame: AnimationDefi
             </PopoverTrigger>
             <PopoverContent className="w-40 p-1" align="end">
               <div className="flex flex-col gap-1">
-                <Button variant="ghost" size="sm" className="h-8 justify-start text-xs" onClick={() => addEvent("play_audio")}>Audio</Button>
-                <Button variant="ghost" size="sm" className="h-8 justify-start text-xs" onClick={() => addEvent("launch_projectile")}>Launch Projectile</Button>
-                <Button variant="ghost" size="sm" className="h-8 justify-start text-xs" onClick={() => addEvent("target_hurt")}>Target Hurt</Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 justify-start text-xs"
+                  onClick={() => addEvent("play_audio")}
+                >
+                  Audio
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 justify-start text-xs"
+                  onClick={() => addEvent("launch_projectile")}
+                >
+                  Launch Projectile
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 justify-start text-xs"
+                  onClick={() => addEvent("target_hurt")}
+                >
+                  Target Hurt
+                </Button>
               </div>
             </PopoverContent>
           </Popover>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onDelete}><Trash2 className="h-3 w-3" /></Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={onDelete}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
       </div>
       {(frame.frameEvents || []).map((ev, ei) => (
-        <div key={ei} className="flex items-center gap-2 pl-4 bg-muted/30 rounded py-1 pr-1">
+        <div
+          key={ei}
+          className="flex items-center gap-2 pl-4 bg-muted/30 rounded py-1 pr-1"
+        >
           <Select
             value={ev.type}
             onValueChange={(v) => {
               const events = [...(frame.frameEvents || [])];
               const newType = v as FrameEvent["type"];
-              const newEv: FrameEvent = { type: newType };
-              if (newType === "play_audio") newEv.audioId = "footstep";
+              let newEv: FrameEvent;
+              if (newType === "play_audio") {
+                newEv = { type: "play_audio", audioId: "footstep" };
+              } else if (newType === "launch_projectile") {
+                newEv = { type: "launch_projectile" };
+              } else {
+                newEv = { type: "target_hurt" };
+              }
               events[ei] = newEv;
               onChange({ ...frame, frameEvents: events });
             }}
           >
-            <SelectTrigger className="h-7 text-[10px] w-28 shrink-0"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-7 text-[10px] w-28 shrink-0">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="play_audio">play_audio</SelectItem>
-              <SelectItem value="launch_projectile">launch_projectile</SelectItem>
+              <SelectItem value="launch_projectile">
+                launch_projectile
+              </SelectItem>
               <SelectItem value="target_hurt">target_hurt</SelectItem>
             </SelectContent>
           </Select>
@@ -1121,18 +1972,42 @@ function AnimationFrameRow({ frame, onChange, onDelete }: { frame: AnimationDefi
               value={ev.audioId}
               onValueChange={(v) => {
                 const events = [...(frame.frameEvents || [])];
-                events[ei] = { ...ev, audioId: v as FrameEvent["audioId"] };
+                events[ei] = {
+                  type: "play_audio",
+                  audioId: v as Extract<
+                    FrameEvent,
+                    { type: "play_audio" }
+                  >["audioId"],
+                };
                 onChange({ ...frame, frameEvents: events });
               }}
             >
-              <SelectTrigger className="h-7 text-[10px] flex-1"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-7 text-[10px] flex-1">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {AUDIO_IDS.map((id) => <SelectItem key={id} value={id}>{id}</SelectItem>)}
+                {AUDIO_IDS.map((id) => (
+                  <SelectItem key={id} value={id}>
+                    {id}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           )}
 
-          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => onChange({ ...frame, frameEvents: (frame.frameEvents || []).filter((_, i) => i !== ei) })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0"
+            onClick={() =>
+              onChange({
+                ...frame,
+                frameEvents: (frame.frameEvents || []).filter(
+                  (_, i) => i !== ei,
+                ),
+              })
+            }
+          >
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
@@ -1155,13 +2030,19 @@ function ProjectileBlock({
   if (!projectile) {
     return (
       <div className="bg-background rounded p-3 border border-dashed border-border flex justify-center">
-        <Button size="sm" variant="outline" onClick={() => onChange({
-          sheetPath: "",
-          frameWidth: 32,
-          frameHeight: 32,
-          frames: [],
-          travelDurationMs: 500
-        })}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() =>
+            onChange({
+              sheetPath: "",
+              frameWidth: 32,
+              frameHeight: 32,
+              frames: [],
+              travelDurationMs: 500,
+            })
+          }
+        >
           <Plus className="h-3 w-3 mr-1" /> Add Projectile
         </Button>
       </div>
@@ -1171,8 +2052,15 @@ function ProjectileBlock({
   return (
     <div className="bg-background rounded p-3 space-y-2 border border-border">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-foreground">Projectile</span>
-        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onChange(undefined)}>
+        <span className="text-xs font-semibold text-foreground">
+          Projectile
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-destructive"
+          onClick={() => onChange(undefined)}
+        >
           <Trash2 className="h-3 w-3" />
         </Button>
       </div>
@@ -1184,13 +2072,19 @@ function ProjectileBlock({
             <Input
               className="h-7 text-xs"
               value={projectile.sheetPath}
-              onChange={(e) => onChange({ ...projectile, sheetPath: e.target.value })}
+              onChange={(e) =>
+                onChange({ ...projectile, sheetPath: e.target.value })
+              }
             />
             <Button
               variant="outline"
               size="sm"
               className="h-7 px-2"
-              onClick={() => onUploadImage(projectile.sheetPath, (path) => onChange({ ...projectile, sheetPath: path }))}
+              onClick={() =>
+                onUploadImage(projectile.sheetPath, (path) =>
+                  onChange({ ...projectile, sheetPath: path }),
+                )
+              }
             >
               <ImagePlus className="h-3 w-3" />
             </Button>
@@ -1203,7 +2097,12 @@ function ProjectileBlock({
               type="number"
               className="h-7 text-xs"
               value={projectile.frameWidth}
-              onChange={(e) => onChange({ ...projectile, frameWidth: parseInt(e.target.value) || 0 })}
+              onChange={(e) =>
+                onChange({
+                  ...projectile,
+                  frameWidth: parseInt(e.target.value) || 0,
+                })
+              }
             />
           </div>
           <div>
@@ -1212,7 +2111,12 @@ function ProjectileBlock({
               type="number"
               className="h-7 text-xs"
               value={projectile.frameHeight}
-              onChange={(e) => onChange({ ...projectile, frameHeight: parseInt(e.target.value) || 0 })}
+              onChange={(e) =>
+                onChange({
+                  ...projectile,
+                  frameHeight: parseInt(e.target.value) || 0,
+                })
+              }
             />
           </div>
         </div>
@@ -1224,7 +2128,12 @@ function ProjectileBlock({
           type="number"
           className="h-7 w-20 text-xs"
           value={projectile.travelDurationMs}
-          onChange={(e) => onChange({ ...projectile, travelDurationMs: parseInt(e.target.value) || 0 })}
+          onChange={(e) =>
+            onChange({
+              ...projectile,
+              travelDurationMs: parseInt(e.target.value) || 0,
+            })
+          }
         />
         <div className="flex items-center gap-1">
           <Checkbox
@@ -1242,7 +2151,8 @@ function ProjectileBlock({
         width={projectile.frameWidth}
         height={projectile.frameHeight}
         onChange={(patch) => {
-          if ("animation" in patch) onChange({ ...projectile, frames: patch.animation });
+          if ("animation" in patch)
+            onChange({ ...projectile, frames: patch.animation });
           if ("loop" in patch) onChange({ ...projectile, loop: patch.loop });
         }}
       />
@@ -1264,12 +2174,18 @@ function TileAnimationBlock({
   if (!animation) {
     return (
       <div className="bg-background rounded p-3 border border-dashed border-border flex justify-center">
-        <Button size="sm" variant="outline" onClick={() => onChange({
-          sheetPath: "",
-          frameWidth: 32,
-          frameHeight: 32,
-          frames: []
-        })}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() =>
+            onChange({
+              sheetPath: "",
+              frameWidth: 32,
+              frameHeight: 32,
+              frames: [],
+            })
+          }
+        >
           <Plus className="h-3 w-3 mr-1" /> Add Tile Animation
         </Button>
       </div>
@@ -1279,8 +2195,15 @@ function TileAnimationBlock({
   return (
     <div className="bg-background rounded p-3 space-y-2 border border-border">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-foreground">Tile Animation</span>
-        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onChange(undefined)}>
+        <span className="text-xs font-semibold text-foreground">
+          Tile Animation
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-destructive"
+          onClick={() => onChange(undefined)}
+        >
           <Trash2 className="h-3 w-3" />
         </Button>
       </div>
@@ -1292,13 +2215,19 @@ function TileAnimationBlock({
             <Input
               className="h-7 text-xs"
               value={animation.sheetPath}
-              onChange={(e) => onChange({ ...animation, sheetPath: e.target.value })}
+              onChange={(e) =>
+                onChange({ ...animation, sheetPath: e.target.value })
+              }
             />
             <Button
               variant="outline"
               size="sm"
               className="h-7 px-2"
-              onClick={() => onUploadImage(animation.sheetPath, (path) => onChange({ ...animation, sheetPath: path }))}
+              onClick={() =>
+                onUploadImage(animation.sheetPath, (path) =>
+                  onChange({ ...animation, sheetPath: path }),
+                )
+              }
             >
               <ImagePlus className="h-3 w-3" />
             </Button>
@@ -1311,7 +2240,12 @@ function TileAnimationBlock({
               type="number"
               className="h-7 text-xs"
               value={animation.frameWidth}
-              onChange={(e) => onChange({ ...animation, frameWidth: parseInt(e.target.value) || 0 })}
+              onChange={(e) =>
+                onChange({
+                  ...animation,
+                  frameWidth: parseInt(e.target.value) || 0,
+                })
+              }
             />
           </div>
           <div>
@@ -1320,7 +2254,12 @@ function TileAnimationBlock({
               type="number"
               className="h-7 text-xs"
               value={animation.frameHeight}
-              onChange={(e) => onChange({ ...animation, frameHeight: parseInt(e.target.value) || 0 })}
+              onChange={(e) =>
+                onChange({
+                  ...animation,
+                  frameHeight: parseInt(e.target.value) || 0,
+                })
+              }
             />
           </div>
         </div>
@@ -1333,7 +2272,8 @@ function TileAnimationBlock({
         width={animation.frameWidth}
         height={animation.frameHeight}
         onChange={(patch) => {
-          if ("animation" in patch) onChange({ ...animation, frames: patch.animation });
+          if ("animation" in patch)
+            onChange({ ...animation, frames: patch.animation });
         }}
       />
     </div>
