@@ -1,5 +1,28 @@
 import type { AnimationDefinition } from "@/types/actor";
 
+/**
+ * Available animation tag names that can be referenced in side effects.
+ * These correspond to frameTags in the shared animations.json (Aseprite export).
+ */
+export const ANIMATION_TAGS = [
+  "idle",
+  "walk",
+  "melee_attack",
+  "range_attack",
+  "magic_attack",
+  "bare_hand_attack",
+  "hurt",
+  "slide",
+  "death",
+  "defensive_stance",
+] as const;
+
+export type AnimationTag = (typeof ANIMATION_TAGS)[number];
+
+/**
+ * Predefined animation frame data — used only for projectile/tileAnimation
+ * definitions that still use the columnIdx-based format.
+ */
 export const PREDEFINED_ANIMATIONS = {
   idle: [
     { columnIdx: 0, frameDurationMs: 500 },
@@ -37,8 +60,6 @@ export const PREDEFINED_ANIMATIONS = {
     { columnIdx: 20, frameDurationMs: 150 },
     { columnIdx: 21, frameDurationMs: 150 },
   ],
-  // Reuses hurt frame 2 (col 21) as a static stumbling pose; large duration is intentional —
-  // the game runner always transitions to idle before it expires.
   slide: [
     { columnIdx: 21, frameDurationMs: 10000 },
   ],

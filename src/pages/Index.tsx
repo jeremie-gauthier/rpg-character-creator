@@ -12,6 +12,7 @@ import {
   type SkillConstraint,
   type SideEffect,
   type AnimationDefinition,
+  type FrameEvent,
 } from "@/types/actor";
 import {
   Upload,
@@ -113,19 +114,35 @@ const prepareActorForExport = (actor: Actor) => {
     return cleaned;
   };
 
+  const cleanFrameEvents = (
+    events: Record<string, readonly FrameEvent[]>,
+  ): Record<string, FrameEvent[]> | undefined => {
+    const cleaned: Record<string, FrameEvent[]> = {};
+    for (const [index, evs] of Object.entries(events)) {
+      if (evs.length > 0) {
+        cleaned[index] = evs.map((ev) => {
+          if (ev.type === "play_audio") return ev;
+          return { type: ev.type };
+        }) as FrameEvent[];
+      }
+    }
+    return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  };
+
   const cleanSideEffect = (se: SideEffect): Record<string, unknown> => {
     const cleaned = { ...se } as Record<string, unknown>;
 
-    if ("animation" in se && se.animation) {
-      if (se.animation.length === 0) {
-        delete cleaned.animation;
-      } else {
-        cleaned.animation = se.animation.map(cleanAnimationDefinition);
-      }
+    if ("animationTag" in se && !se.animationTag) {
+      delete cleaned.animationTag;
     }
 
-    if ("loop" in se && (se.loop === false || se.loop === undefined)) {
-      delete cleaned.loop;
+    if ("frameEvents" in se && se.frameEvents) {
+      const events = cleanFrameEvents(se.frameEvents);
+      if (events) {
+        cleaned.frameEvents = events;
+      } else {
+        delete cleaned.frameEvents;
+      }
     }
 
     if ("radius" in se && se.radius === 0) delete cleaned.radius;
