@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -96,7 +97,7 @@ export function AnimationTagSection({
             />
           </div>
 
-          {Object.entries(events).map(([frameIndex, evs]) =>
+          {Object.entries(events).sort(([a], [b]) => Number(a) - Number(b)).map(([frameIndex, evs]) =>
             evs.map((ev, ei) => (
               <div
                 key={`${frameIndex}-${ei}`}
@@ -202,15 +203,17 @@ function FrameEventAdderContent({
 }: {
   onAdd: (frameIndex: string, event: FrameEvent) => void;
 }) {
+  const [frameIndex, setFrameIndex] = useState("0");
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Label className="text-xs">Frame #</Label>
         <Input
-          id="frame-event-index"
           type="number"
           className="h-7 w-14 text-xs"
-          defaultValue={0}
+          value={frameIndex}
+          onChange={(e) => setFrameIndex(e.target.value)}
           min={0}
         />
       </div>
@@ -229,15 +232,11 @@ function FrameEventAdderContent({
             size="sm"
             className="h-7 justify-start text-xs"
             onClick={() => {
-              const input = document.getElementById(
-                "frame-event-index",
-              ) as HTMLInputElement;
-              const idx = input?.value ?? "0";
               const event: FrameEvent =
                 type === "play_audio"
                   ? { type: "play_audio", audioId: "footstep" }
                   : { type };
-              onAdd(idx, event);
+              onAdd(frameIndex, event);
             }}
           >
             {type}
