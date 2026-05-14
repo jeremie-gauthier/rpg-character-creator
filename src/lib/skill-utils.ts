@@ -9,6 +9,15 @@ import {
   type PresetAnimationKey,
 } from "@/data/predefined-animations";
 
+export const FRAME_EVENT_TYPES = [
+  "play_audio",
+  "launch_projectile",
+  "target_hurt",
+  "animate_tiles",
+] as const;
+
+export type FrameEventType = (typeof FRAME_EVENT_TYPES)[number];
+
 export const AUDIO_IDS = [
   "footstep",
   "door",

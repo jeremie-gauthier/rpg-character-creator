@@ -15,7 +15,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ANIMATION_TAGS } from "@/data/predefined-animations";
-import { AUDIO_IDS } from "@/lib/skill-utils";
+import { AUDIO_IDS, FRAME_EVENT_TYPES } from "@/lib/skill-utils";
 import type { FrameEvent } from "@/types/actor";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -97,7 +97,7 @@ export function AnimationTagSection({
             />
           </div>
 
-          {Object.entries(events).sort(([a], [b]) => Number(a) - Number(b)).map(([frameIndex, evs]) =>
+          {Object.entries(events).sort(([a], [b]) => Number(a) - Number(b)).flatMap(([frameIndex, evs]) =>
             evs.map((ev, ei) => (
               <div
                 key={`${frameIndex}-${ei}`}
@@ -127,12 +127,11 @@ export function AnimationTagSection({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="play_audio">play_audio</SelectItem>
-                    <SelectItem value="launch_projectile">
-                      launch_projectile
-                    </SelectItem>
-                    <SelectItem value="target_hurt">target_hurt</SelectItem>
-                    <SelectItem value="animate_tiles">animate_tiles</SelectItem>
+                    {FRAME_EVENT_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 
@@ -218,14 +217,7 @@ function FrameEventAdderContent({
         />
       </div>
       <div className="flex flex-col gap-1">
-        {(
-          [
-            "play_audio",
-            "launch_projectile",
-            "target_hurt",
-            "animate_tiles",
-          ] as const
-        ).map((type) => (
+        {FRAME_EVENT_TYPES.map((type) => (
           <Button
             key={type}
             variant="ghost"

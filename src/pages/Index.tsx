@@ -114,16 +114,51 @@ const prepareActorForExport = (actor: Actor) => {
     return cleaned;
   };
 
+  // Events already provided by COMMON_FRAME_EVENTS in the game engine.
+  // These are automatically merged at load time, so we omit them from the export
+  // to avoid duplicates.
+  const COMMON_FRAME_EVENTS: Record<string, Record<number, FrameEvent>> = {
+    walk: {
+      0: { type: "play_audio", audioId: "footstep" },
+      2: { type: "play_audio", audioId: "footstep" },
+    },
+    melee_attack: {
+      1: { type: "play_audio", audioId: "sword_attack" },
+    },
+    hurt: {
+      0: { type: "play_audio", audioId: "hurt" },
+    },
+  };
+
+  const isCommonEvent = (
+    animationTag: string | undefined,
+    frameIndex: string,
+    ev: FrameEvent,
+  ): boolean => {
+    if (!animationTag) return false;
+    const commonEvent = COMMON_FRAME_EVENTS[animationTag]?.[Number(frameIndex)];
+    if (!commonEvent) return false;
+    return (
+      commonEvent.type === ev.type &&
+      (commonEvent.type !== "play_audio" ||
+        (ev.type === "play_audio" && commonEvent.audioId === ev.audioId))
+    );
+  };
+
   const cleanFrameEvents = (
     events: Record<string, readonly FrameEvent[]>,
+    animationTag: string | undefined,
   ): Record<string, FrameEvent[]> | undefined => {
     const cleaned: Record<string, FrameEvent[]> = {};
     for (const [index, evs] of Object.entries(events)) {
-      if (evs.length > 0) {
-        cleaned[index] = evs.map((ev) => {
+      const filtered = evs
+        .filter((ev) => !isCommonEvent(animationTag, index, ev))
+        .map((ev) => {
           if (ev.type === "play_audio") return ev;
           return { type: ev.type };
         }) as FrameEvent[];
+      if (filtered.length > 0) {
+        cleaned[index] = filtered;
       }
     }
     return Object.keys(cleaned).length > 0 ? cleaned : undefined;
@@ -137,7 +172,8 @@ const prepareActorForExport = (actor: Actor) => {
     }
 
     if ("frameEvents" in se && se.frameEvents) {
-      const events = cleanFrameEvents(se.frameEvents);
+      const tag = "animationTag" in se ? se.animationTag : undefined;
+      const events = cleanFrameEvents(se.frameEvents, tag);
       if (events) {
         cleaned.frameEvents = events;
       } else {
