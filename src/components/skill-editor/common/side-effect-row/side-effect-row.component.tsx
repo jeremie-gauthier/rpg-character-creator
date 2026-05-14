@@ -1,4 +1,4 @@
-import { AnimationFramesSection } from "@/components/skill-editor/common/animation-frames-section/animation-frames-section.component";
+import { AnimationTagSection } from "@/components/skill-editor/common/animation-tag-section/animation-tag-section.component";
 import { AoeBlock } from "@/components/skill-editor/common/aoe-block/aoe-block.component";
 import { ReactionSkillBlock } from "@/components/skill-editor/common/reaction-skill-block/reaction-skill-block.component";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ import {
   CONDITION_NAMES,
 } from "@/lib/skill-utils";
 import type {
-  AoeShape,
   ConditionJson,
   ConditionName,
   ReactionSkillJson,
@@ -139,10 +138,9 @@ export function SideEffectRow({
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
 
-        <AnimationFramesSection
-          animation={effect.animation || []}
-          loop={!!effect.loop}
-          spriteSheet={spriteSheet}
+        <AnimationTagSection
+          animationTag={effect.animationTag}
+          frameEvents={effect.frameEvents}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
       </div>
@@ -357,10 +355,9 @@ export function SideEffectRow({
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
 
-        <AnimationFramesSection
-          animation={effect.animation || []}
-          loop={!!effect.loop}
-          spriteSheet={spriteSheet}
+        <AnimationTagSection
+          animationTag={effect.animationTag}
+          frameEvents={effect.frameEvents}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
       </div>
@@ -438,10 +435,9 @@ export function SideEffectRow({
           shapes={AOE_SHAPES}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
-        <AnimationFramesSection
-          animation={effect.animation || []}
-          loop={!!effect.loop}
-          spriteSheet={spriteSheet}
+        <AnimationTagSection
+          animationTag={effect.animationTag}
+          frameEvents={effect.frameEvents}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
         <div className="space-y-2">
@@ -533,10 +529,9 @@ export function SideEffectRow({
           shapes={AOE_SHAPES}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
-        <AnimationFramesSection
-          animation={effect.animation || []}
-          loop={!!effect.loop}
-          spriteSheet={spriteSheet}
+        <AnimationTagSection
+          animationTag={effect.animationTag}
+          frameEvents={effect.frameEvents}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
       </div>
@@ -625,10 +620,9 @@ export function SideEffectRow({
           shapes={isCorruption ? AOE_SHAPES_NO_DIAGONAL : AOE_SHAPES}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
-        <AnimationFramesSection
-          animation={effect.animation || []}
-          loop={!!effect.loop}
-          spriteSheet={spriteSheet}
+        <AnimationTagSection
+          animationTag={effect.animationTag}
+          frameEvents={effect.frameEvents}
           onChange={(patch) => onChange({ ...effect, ...patch })}
         />
       </div>
@@ -712,10 +706,9 @@ export function SideEffectRow({
         onChange={(patch) => onChange({ ...effect, ...patch })}
       />
 
-      <AnimationFramesSection
-        animation={effect.animation || []}
-        loop={!!effect.loop}
-        spriteSheet={spriteSheet}
+      <AnimationTagSection
+        animationTag={effect.animationTag}
+        frameEvents={effect.frameEvents}
         onChange={(patch) => onChange({ ...effect, ...patch })}
       />
 

@@ -60,8 +60,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: "diamond" | "square" | "circle" | "cross";
-      animation?: AnimationDefinition[];
-      loop?: boolean;
+      animationTag?: string;
+      frameEvents?: Record<string, readonly FrameEvent[]>;
       projectile?: ProjectileJsonDefinition;
       tileAnimation?: TileAnimationJsonDefinition;
     }
@@ -73,8 +73,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: "diamond" | "square" | "circle" | "cross";
-      animation?: AnimationDefinition[];
-      loop?: boolean;
+      animationTag?: string;
+      frameEvents?: Record<string, readonly FrameEvent[]>;
     }
   | { type: "charge-target" }
   | { type: "pull-target" }
@@ -90,8 +90,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: "diamond" | "square" | "circle" | "cross";
-      animation?: AnimationDefinition[];
-      loop?: boolean;
+      animationTag?: string;
+      frameEvents?: Record<string, readonly FrameEvent[]>;
     }
   | {
       type: "apply-heal-corruption";
@@ -101,8 +101,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: AoeShape;
-      animation?: AnimationDefinition[];
-      loop?: boolean;
+      animationTag?: string;
+      frameEvents?: Record<string, readonly FrameEvent[]>;
     }
   | {
       type: "apply-condition";
@@ -111,8 +111,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: AoeShape;
-      animation?: AnimationDefinition[];
-      loop?: boolean;
+      animationTag?: string;
+      frameEvents?: Record<string, readonly FrameEvent[]>;
     }
   | {
       type: "apply-condition-cleanse";
@@ -121,8 +121,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: AoeShape;
-      animation?: AnimationDefinition[];
-      loop?: boolean;
+      animationTag?: string;
+      frameEvents?: Record<string, readonly FrameEvent[]>;
     }
   | {
       type: "apply-damage-per-condition";
@@ -132,8 +132,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: AoeShape;
-      animation?: AnimationDefinition[];
-      loop?: boolean;
+      animationTag?: string;
+      frameEvents?: Record<string, readonly FrameEvent[]>;
       projectile?: ProjectileJsonDefinition;
       tileAnimation?: TileAnimationJsonDefinition;
     }
@@ -145,8 +145,8 @@ export type SideEffect =
       radius?: number;
       minRadius?: number;
       shape?: AoeShape;
-      animation?: AnimationDefinition[];
-      loop?: boolean;
+      animationTag?: string;
+      frameEvents?: Record<string, readonly FrameEvent[]>;
     };
 
 export type ConditionJson =
